@@ -1,0 +1,36 @@
+{
+	"name": "DS_AZBLOB_CONTAINER_METADATA_DETAILS",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZBLOB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "MetData_ContainerExists.txt",
+				"container": "containermetadatadetails"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "SourceFolder",
+				"type": "String"
+			},
+			{
+				"name": "TargetFolder",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

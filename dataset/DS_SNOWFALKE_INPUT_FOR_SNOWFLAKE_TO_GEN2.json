@@ -1,0 +1,33 @@
+{
+	"name": "DS_SNOWFALKE_INPUT_FOR_SNOWFLAKE_TO_GEN2",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SNOWFLAKE",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "SnowflakeTable",
+		"schema": [
+			{
+				"name": "ID",
+				"type": "NUMBER",
+				"precision": 38,
+				"scale": 0
+			},
+			{
+				"name": "NAME",
+				"type": "VARCHAR",
+				"precision": 50,
+				"scale": 0
+			}
+		],
+		"typeProperties": {
+			"schema": "SAMPLESCHEMA",
+			"table": "SAMPLETABLE"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

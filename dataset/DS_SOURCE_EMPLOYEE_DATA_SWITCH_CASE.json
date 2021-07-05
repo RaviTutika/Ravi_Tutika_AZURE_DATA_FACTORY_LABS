@@ -1,0 +1,51 @@
+{
+	"name": "DS_SOURCE_EMPLOYEE_DATA_SWITCH_CASE",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZGEN2_DATAFACTORY",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileSystem": "employeedata"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "FirstName",
+				"type": "String"
+			},
+			{
+				"name": "LastName",
+				"type": "String"
+			},
+			{
+				"name": "Gender",
+				"type": "String"
+			},
+			{
+				"name": "TotalChildren",
+				"type": "String"
+			},
+			{
+				"name": "YearlyIncome",
+				"type": "String"
+			},
+			{
+				"name": "EnglishEducation",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

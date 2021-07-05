@@ -1,0 +1,84 @@
+{
+	"name": "PL_LAB_23_EVENT_TRIGGER_COPY_DATA_BLOB_TO_SQL",
+	"properties": {
+		"activities": [
+			{
+				"name": "COPY DATA FROM BLOB TO SQLDB",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"wildcardFileName": "*",
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"tableOption": "autoCreate",
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_EVENT_TRIGGER_INPUT",
+						"type": "DatasetReference",
+						"parameters": {
+							"DS_CONTAINER_NAME_PARAM": {
+								"value": "@pipeline().parameters.PL_SOURCE_FOLDER_PARAM",
+								"type": "Expression"
+							},
+							"DS_FILE_NAME_PARAM": {
+								"value": "@pipeline().parameters.PL_FILENAME_PARAM",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_EVENT_TRIGGER_OUTPUT_SQL",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"parameters": {
+			"PL_SOURCE_FOLDER_PARAM": {
+				"type": "string"
+			},
+			"PL_FILENAME_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-16T05:59:34Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,66 @@
+{
+	"name": "PL_LAB_12_CASE_04_COPY_AZSQL_TABLE_STORAGE_CONTAINER_STORED_PROCEDURE",
+	"properties": {
+		"activities": [
+			{
+				"name": "COPY DATA - AZSQL TO STORAGE ACCOUNT",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderStoredProcedureName": "[dbo].[USP_GetSalesOrderDetails]",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".csv"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_AZSQLDB_SALESORDER_DETAILS_INPUT",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_AZSQLSTORAGE_OUTPUT_FROM_SQLDB",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-12T17:42:09Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

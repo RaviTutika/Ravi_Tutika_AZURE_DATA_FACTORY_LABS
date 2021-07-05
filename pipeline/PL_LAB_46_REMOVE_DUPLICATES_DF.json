@@ -1,0 +1,37 @@
+{
+	"name": "PL_LAB_46_REMOVE_DUPLICATES_DF",
+	"properties": {
+		"activities": [
+			{
+				"name": "DF - REMOVE DUPLICATES",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF_GEN2_REMOVE_DUPLICATES_STORE_SUMMARY",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-25T03:37:44Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

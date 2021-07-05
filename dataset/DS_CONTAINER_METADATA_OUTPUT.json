@@ -1,0 +1,34 @@
+{
+	"name": "DS_CONTAINER_METADATA_OUTPUT",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZBLOB",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_OUTPUT_CONTAINER_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": {
+					"value": "@dataset().DS_OUTPUT_CONTAINER_PARAM",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

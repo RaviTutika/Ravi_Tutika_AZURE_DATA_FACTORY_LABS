@@ -1,0 +1,238 @@
+{
+	"name": "PL_LAB_32_INCREMENTAL_LOAD_SQL_SERVER_AZSQL_copy1",
+	"properties": {
+		"activities": [
+			{
+				"name": "FOREACH - LOOP THROUGH INCREMENTAL LOAD",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LOOKUP - INCREMENTAL CONFIG DATA",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LOOKUP - INCREMENTAL CONFIG DATA').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "LOOKUP - NEW WATER MARK VALUE",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "SELECT MAX(@{item().WaterMakr_Column}) AS NewWaterMarkValue FROM \n@{item().TABLE_NAME}",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "LS_SQLSERVER_INPUT_QUERYFOR_INCREMENTALLOAD",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "LOOK UP - OLD WATER MARK VALUE",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "SELECT TableName,WatermarkValue FROM watermarktableSqlServerSQlDB\nWHERE TableName='@{item().TABLE_NAME}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "DS_AZSQL_INCREMENTAL_METADATA",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "COPY DATA - INCRMENTAL LOD SQL TO AZSQL",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "LOOK UP - OLD WATER MARK VALUE",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "LOOKUP - NEW WATER MARK VALUE",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "SqlServerSource",
+									"sqlReaderQuery": {
+										"value": "SELECT * FROM \n@{item().TABLE_NAME}\nWHERE @{item().WaterMakr_Column} >'@{activity('LOOK UP - OLD WATER MARK VALUE').output.firstRow.WatermarkValue}'\nAND @{item().WaterMakr_Column}<='@{activity('LOOKUP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"sqlWriterStoredProcedureName": {
+										"value": "@{item().StoredProcedureForMigration}",
+										"type": "Expression"
+									},
+									"sqlWriterTableType": {
+										"value": "@{item().Table_Type}",
+										"type": "Expression"
+									},
+									"storedProcedureTableTypeParameterName": {
+										"value": "@{item().TABLE_NAME}",
+										"type": "Expression"
+									},
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "LS_SQLSERVER_INPUT_QUERYFOR_INCREMENTALLOAD",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_AZSQL_INCREMENTAL_OUTPUT_SINK",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_SINK_PARAM": {
+											"value": "@{item().TABLE_NAME}",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "STORED PROCEDURE - UPDATE METADATA",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "COPY DATA - INCRMENTAL LOD SQL TO AZSQL",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[usp_UpdatewatermarktableSqlServerSQlDB]",
+								"storedProcedureParameters": {
+									"LastestModifyTime": {
+										"value": {
+											"value": "@{activity('LOOKUP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"Sourcetable": {
+										"value": {
+											"value": "@activity('LOOK UP - OLD WATER MARK VALUE').output.firstRow.TableName",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_AZSQLDB_KV",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "LOOKUP - INCREMENTAL CONFIG DATA",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_INCREMENTAL_CONFIGDATA_MULTILOAD",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-19T08:20:40Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

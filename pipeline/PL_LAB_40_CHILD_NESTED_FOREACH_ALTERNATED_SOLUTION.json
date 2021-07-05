@@ -1,0 +1,150 @@
+{
+	"name": "PL_LAB_40_CHILD_NESTED_FOREACH_ALTERNATED_SOLUTION",
+	"properties": {
+		"activities": [
+			{
+				"name": "GET META DATA LOOP THROUGH FOLDER FILES",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "DS_AZGEN2_INPUT_GETFILES_INPUT_NESTED_FOREACH",
+						"type": "DatasetReference",
+						"parameters": {
+							"DS_FOLDER_NAME_PARAM_NESTED_FOREACH": {
+								"value": "@pipeline().parameters.PL_CHILD_PIPELINE_FOLDER_PARAM",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "FOREACH - LOOP THROUGH FILES",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "GET META DATA LOOP THROUGH FOLDER FILES",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('GET META DATA LOOP THROUGH FOLDER FILES').output.childitems",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "COPY DATA - AZ GEN2 INPUT TO OUTPUT GEN2",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"wildcardFileName": "*",
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_AZGEN2_INPUT_GETFILES_INPUT_NESTED_FOREACH",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_FOLDER_NAME_PARAM_NESTED_FOREACH": {
+											"value": "@pipeline().parameters.PL_CHILD_PIPELINE_FOLDER_PARAM",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_SINK_GEN2_NESTED_FOREACH_FOLDER_FILES",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_FOLDER_SINK_NESTED_FOREACH_PARAM": {
+											"value": "@pipeline().parameters.PL_CHILD_PIPELINE_FOLDER_PARAM",
+											"type": "Expression"
+										},
+										"DS_FILES_SINK_NESTED_FOREACH_PARAM": {
+											"value": "@item().name",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"PL_CHILD_PIPELINE_FOLDER_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-22T11:11:11Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,35 @@
+{
+	"name": "DS_GEN2_INPUT_GET_FILES_WOUT_LPV",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZGEN2_DATAFACTORY",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_GETFOLDER_FOR_FILES_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": {
+					"value": "@dataset().DS_GETFOLDER_FOR_FILES_PARAM",
+					"type": "Expression"
+				},
+				"fileSystem": "withoutlpv"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

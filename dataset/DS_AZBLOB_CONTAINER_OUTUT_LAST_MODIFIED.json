@@ -1,0 +1,34 @@
+{
+	"name": "DS_AZBLOB_CONTAINER_OUTUT_LAST_MODIFIED",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZBLOB_KV",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_SINK_CONTAINER_PARM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": {
+					"value": "@dataset().DS_SINK_CONTAINER_PARM",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

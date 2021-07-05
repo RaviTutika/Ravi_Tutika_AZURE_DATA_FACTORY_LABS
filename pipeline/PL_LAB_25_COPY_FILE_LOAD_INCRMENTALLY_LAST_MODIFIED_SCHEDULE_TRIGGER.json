@@ -1,0 +1,206 @@
+{
+	"name": "PL_LAB_25_COPY_FILE_LOAD_INCRMENTALLY_LAST_MODIFIED_SCHEDULE_TRIGGER",
+	"properties": {
+		"activities": [
+			{
+				"name": "LOOKUP - METADATA FILE LOAD",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AZSQL_LASTMODIFIEDCONTAINER_INPUT",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "FOREACH - LOOP THROUGH META DATA FILE LOAD",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LOOKUP - METADATA FILE LOAD",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LOOKUP - METADATA FILE LOAD').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "SET VARIABLE - UPV",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "NewProccededValue",
+								"value": {
+									"value": "@IF(\nlessOrEquals(addminutes(item().LPV,item().Duration),convertFromUtc(utcnow(),'india standard time'))\n,addminutes(item().LPV,item().Duration),convertFromUtc(utcnow(),'india standard time'))",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "COPY DATA FILE LOAD INCREMENTALLY",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "SET VARIABLE - UPV",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": true,
+										"modifiedDatetimeStart": {
+											"value": "@convertToUtc(item().LPV,'india standard time')",
+											"type": "Expression"
+										},
+										"modifiedDatetimeEnd": {
+											"value": "@convertToUtc(variables('NewProccededValue'),'india standard time')",
+											"type": "Expression"
+										},
+										"wildcardFileName": "*",
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".csv"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "LS_AZBLOB_CONTAINER_INPUT_LAST_MODIFIED",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_SOURCE_CONTAINER_NAME": {
+											"value": "@item().SourceContainerName",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_AZBLOB_CONTAINER_OUTUT_LAST_MODIFIED",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_SINK_CONTAINER_PARM": {
+											"value": "@item().DestinationContainerName",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "SP - UPDATE LPV",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "COPY DATA FILE LOAD INCREMENTALLY",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[USP_UpdateCONTAINER_LASTMODIFIED]",
+								"storedProcedureParameters": {
+									"SinkContainerName": {
+										"value": {
+											"value": "@item().DestinationContainerName",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"UPV": {
+										"value": {
+											"value": "@variables('NewProccededValue')",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_AZSQLDB_KV",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"NewProccededValue": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-20T01:45:46Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

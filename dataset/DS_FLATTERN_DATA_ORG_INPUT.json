@@ -1,0 +1,53 @@
+{
+	"name": "DS_FLATTERN_DATA_ORG_INPUT",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZGEN2_DATAFACTORY",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "flatten_data.json",
+				"fileSystem": "inputfordata"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"type": "string"
+				},
+				"type": {
+					"type": "string"
+				},
+				"name": {
+					"type": "string"
+				},
+				"profit": {
+					"type": "string"
+				},
+				"managment": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string"
+							},
+							"type": {
+								"type": "string"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

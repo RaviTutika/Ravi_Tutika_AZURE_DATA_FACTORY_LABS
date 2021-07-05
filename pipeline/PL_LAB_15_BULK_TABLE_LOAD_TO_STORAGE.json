@@ -1,0 +1,195 @@
+{
+	"name": "PL_LAB_15_BULK_TABLE_LOAD_TO_STORAGE",
+	"properties": {
+		"activities": [
+			{
+				"name": "LOOKUP - AZSQLBULK LOAD",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AZSQL_BULLOAD_TABLE_METADATA_STORAGE",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "FOR EACH - LOOP THROUGH META DATA",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LOOKUP - AZSQLBULK LOAD",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LOOKUP - AZSQLBULK LOAD').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "GET META DATA - TABLE EXISTENCE",
+							"type": "GetMetadata",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "DS_AZSQL_SCHEMA_TABLE_INPUT",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_SCHEMA_NAME_PARAM": {
+											"value": "@item().SchemaName",
+											"type": "Expression"
+										},
+										"DS_TABLE_NAME_PARAM": {
+											"value": "@item().TableName",
+											"type": "Expression"
+										}
+									}
+								},
+								"fieldList": [
+									"exists"
+								]
+							}
+						},
+						{
+							"name": "IF CONDITION - CHECK FOR TABLE EXISTENCE",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "GET META DATA - TABLE EXISTENCE",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@activity('GET META DATA - TABLE EXISTENCE').output.Exists",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "WAIT ACTIVTY IF TABLE NOT EXISTS",
+										"type": "Wait",
+										"dependsOn": [],
+										"userProperties": [],
+										"typeProperties": {
+											"waitTimeInSeconds": 2
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "COPY DATA FROM AZURE SQL TO AZURE STORAG",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "7.00:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "AzureSqlSource",
+												"queryTimeout": "02:00:00",
+												"partitionOption": "None"
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobStorageWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "DS_AZSQL_SCHEMA_TABLE_INPUT",
+												"type": "DatasetReference",
+												"parameters": {
+													"DS_SCHEMA_NAME_PARAM": {
+														"value": "@item().SchemaName",
+														"type": "Expression"
+													},
+													"DS_TABLE_NAME_PARAM": {
+														"value": "@item().TableName",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "DS_BULKBLOBSTORAGE_FROM_SQL_OUTPUT",
+												"type": "DatasetReference",
+												"parameters": {
+													"DS_CONTAINER_NAME_PARAM": {
+														"value": "@item().SinkContaineName",
+														"type": "Expression"
+													},
+													"DS_FILE_NAME_PARAM": {
+														"value": "@item().SinkFileName",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-12T17:42:08Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

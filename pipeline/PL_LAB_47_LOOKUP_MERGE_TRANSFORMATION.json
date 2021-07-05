@@ -1,0 +1,37 @@
+{
+	"name": "PL_LAB_47_LOOKUP_MERGE_TRANSFORMATION",
+	"properties": {
+		"activities": [
+			{
+				"name": "DF - MERGE LOOKUP",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF_AZGEN2_DB_JOIN_LOOKUP",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Coarse"
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-25T18:41:20Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

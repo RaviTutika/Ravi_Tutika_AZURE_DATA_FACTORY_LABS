@@ -1,0 +1,79 @@
+{
+	"name": "DF_AZGEN2_SQLDB_SCD_TYPE_ONE",
+	"properties": {
+		"folder": {
+			"name": "MASTER_DATAFACTORY_DATAFLOW"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_ADLS_GEN2_SCD_INPUT",
+						"type": "DatasetReference"
+					},
+					"name": "AzGenCustDataSCD"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQLDB_SCD",
+						"type": "DatasetReference"
+					},
+					"name": "AZSQLDBDimCustomer"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQLDB_SCD",
+						"type": "DatasetReference"
+					},
+					"name": "AZSQLDBSINKSCD"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQLDB_SCD",
+						"type": "DatasetReference"
+					},
+					"name": "SinkForUpdateAZSQLDB"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DerivedColumnSurrogateKey"
+				},
+				{
+					"name": "LookupForMatchedNonMatchedData"
+				},
+				{
+					"name": "RenamingSinkSQLDB"
+				},
+				{
+					"name": "DerivedColumnForAction"
+				},
+				{
+					"name": "ConditionalSplitByAction"
+				},
+				{
+					"name": "AlterRowForInsert"
+				},
+				{
+					"name": "DerivedColumnNew"
+				},
+				{
+					"name": "SelectRequiredColumns"
+				},
+				{
+					"name": "AlterRowForUpdate"
+				},
+				{
+					"name": "DerivedColumnforUpdate"
+				},
+				{
+					"name": "SelectRequiredColumnsForUpdate"
+				}
+			],
+			"script": "source(output(\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> AzGenCustDataSCD\nsource(output(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> AZSQLDBDimCustomer\nAzGenCustDataSCD derive(Surrogate_key = crc32(concat(toString(cust_id),custname,manager,city,toString(phno)))) ~> DerivedColumnSurrogateKey\nDerivedColumnSurrogateKey, RenamingSinkSQLDB lookup(cust_id == Target_cust_id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupForMatchedNonMatchedData\nAZSQLDBDimCustomer select(mapColumn(\n\t\tTarget_surrogate_key = surrogate_key,\n\t\tTarget_cust_id = cust_id,\n\t\tTarget_custname = custname,\n\t\tTarget_manager = manager,\n\t\tTarget_city = city,\n\t\tcreated_date,\n\t\tcreated_by,\n\t\tupdated_date,\n\t\tupdated_by\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> RenamingSinkSQLDB\nLookupForMatchedNonMatchedData derive(Action = iif(isNull(Target_cust_id),\"I\",iif((Surrogate_key!=Target_surrogate_key),\"U\",\"NA\"))) ~> DerivedColumnForAction\nDerivedColumnForAction split(Action==\"I\",\n\tAction==\"U\",\n\tdisjoint: false) ~> ConditionalSplitByAction@(NewRecords, UpdateRecords)\nConditionalSplitByAction@NewRecords alterRow(insertIf(true())) ~> AlterRowForInsert\nAlterRowForInsert derive(created_date = currentDate(),\n\t\tcreated_by = \"Data Flows\",\n\t\tupdated_date = currentDate(),\n\t\tupdated_by = \"Data Flows\") ~> DerivedColumnNew\nDerivedColumnNew select(mapColumn(\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tphno,\n\t\tSurrogate_key,\n\t\tcreated_by,\n\t\tupdated_date,\n\t\tupdated_by,\n\t\tcreated_date\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredColumns\nConditionalSplitByAction@UpdateRecords alterRow(updateIf(true())) ~> AlterRowForUpdate\nAlterRowForUpdate derive(updated_date = currentDate(),\n\t\tupdated_by = \"Data Flow Update\") ~> DerivedColumnforUpdate\nDerivedColumnforUpdate select(mapColumn(\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tphno,\n\t\tSurrogate_key,\n\t\tupdated_date,\n\t\tupdated_by\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredColumnsForUpdate\nSelectRequiredColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsurrogate_key = Surrogate_key,\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tcreated_date,\n\t\tcreated_by,\n\t\tupdated_date,\n\t\tupdated_by\n\t)) ~> AZSQLDBSINKSCD\nSelectRequiredColumnsForUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['cust_id'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsurrogate_key = Surrogate_key,\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tupdated_date,\n\t\tupdated_by\n\t)) ~> SinkForUpdateAZSQLDB"
+		}
+	}
+}

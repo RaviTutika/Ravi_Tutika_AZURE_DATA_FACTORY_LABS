@@ -1,0 +1,40 @@
+{
+	"name": "DS_AZSQL_VM_DATA_INPUT_SELFHOSTED",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZVM_SQL_ON_PREMISE",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "SqlServerTable",
+		"schema": [
+			{
+				"name": "EmpID",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "EmpName",
+				"type": "varchar"
+			},
+			{
+				"name": "Location",
+				"type": "varchar"
+			},
+			{
+				"name": "LastModifyTime",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "EmployeeTable"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

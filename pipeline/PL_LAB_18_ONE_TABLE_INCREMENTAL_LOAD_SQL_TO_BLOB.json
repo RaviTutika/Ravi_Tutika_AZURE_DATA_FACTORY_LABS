@@ -1,0 +1,176 @@
+{
+	"name": "PL_LAB_18_ONE_TABLE_INCREMENTAL_LOAD_SQL_TO_BLOB",
+	"properties": {
+		"activities": [
+			{
+				"name": "LOOKUP - GET OLD WATER MARK VALUE",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AZSQL_INCREMENTAL_WATERMARK_COLUMN_SINGLE",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": true
+				}
+			},
+			{
+				"name": "LOOK UP - NEW WATER MARK VALUE",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "SELECT MAX(LastModifyTime) AS [NewWaterMarkValue] FROM EmployeeTable",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AZSQL_INCREMENTAL_WATERMARK_COLUMN_SINGLE",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": true
+				}
+			},
+			{
+				"name": "COPY DATA - INCREMENTAL LOAD",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "LOOKUP - GET OLD WATER MARK VALUE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "LOOK UP - NEW WATER MARK VALUE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "SELECT * FROM EmployeeTable\nWHERE LastModifyTime >'@{activity('LOOKUP - GET OLD WATER MARK VALUE').output.firstRow.LastModifyTime}'\nAND LastModifyTime <='@{activity('LOOK UP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".csv"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_AZSQL_INCREMENTAL_WATERMARK_COLUMN_SINGLE",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_SINGLE_TABLE_INCREMENTAL_OUTPUT",
+						"type": "DatasetReference"
+					}
+				]
+			},
+			{
+				"name": "SP_FOR_UPDATE_WATERMARK_TABLE",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "COPY DATA - INCREMENTAL LOAD",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[USP_UpdateWaterMarkTable]",
+					"storedProcedureParameters": {
+						"LastModifiedTime": {
+							"value": {
+								"value": "@activity('LOOK UP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"TableName": {
+							"value": {
+								"value": "@activity('LOOKUP - GET OLD WATER MARK VALUE').output.firstRow.TableName",
+								"type": "Expression"
+							},
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB_KV",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-14T15:48:10Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

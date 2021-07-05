@@ -1,0 +1,59 @@
+{
+	"name": "DF - AZSQLDB WITH UNION AND CONDITIONAL_SPLIT",
+	"properties": {
+		"folder": {
+			"name": "MASTER_DATAFACTORY_DATAFLOW"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQLDB_SOURCE_ONE_DF",
+						"type": "DatasetReference"
+					},
+					"name": "EmployeeSource"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQLDB_SOURCE_TWO_DF",
+						"type": "DatasetReference"
+					},
+					"name": "EmployeeSourcePartTwo"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "Labdata"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "ITData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "AccountData"
+				}
+			],
+			"transformations": [
+				{
+					"name": "EmployeeDataUnion"
+				},
+				{
+					"name": "ConditionalSplitByDepartment"
+				}
+			],
+			"script": "source(output(\n\t\tEmpID as integer,\n\t\tEmpName as string,\n\t\tDesignation as string,\n\t\tDepartment as string,\n\t\tJoiningDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> EmployeeSource\nsource(output(\n\t\tEmpID as integer,\n\t\tEmpName as string,\n\t\tDesignation as string,\n\t\tDepartment as string,\n\t\tJoiningDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> EmployeeSourcePartTwo\nEmployeeSource, EmployeeSourcePartTwo union(byName: true)~> EmployeeDataUnion\nEmployeeDataUnion split(equals(Department,\"LAB\"),\n\tequals(Department,\"IT\"),\n\tdisjoint: false) ~> ConditionalSplitByDepartment@(LABData, ITData, Accounts)\nConditionalSplitByDepartment@LABData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['LabData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> Labdata\nConditionalSplitByDepartment@ITData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['ITData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> ITData\nConditionalSplitByDepartment@Accounts sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['AccountsData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> AccountData"
+		}
+	}
+}

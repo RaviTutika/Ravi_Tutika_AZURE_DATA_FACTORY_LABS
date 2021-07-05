@@ -1,0 +1,22 @@
+{
+	"name": "PL_LAB_24_CASE_02_PIPELINE_DEPENDENCY",
+	"properties": {
+		"activities": [
+			{
+				"name": "WAIT FOR DEPENDENCY",
+				"type": "Wait",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 2
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-16T10:46:16Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

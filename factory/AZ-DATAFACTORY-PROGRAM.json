@@ -1,0 +1,9 @@
+{
+	"name": "AZ-DATAFACTORY-PROGRAM",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "f65032e5-e4c2-48fe-8b48-3536a47a685b",
+		"tenantId": "1b245dc6-331c-4605-b360-b4404a7de449"
+	}
+}

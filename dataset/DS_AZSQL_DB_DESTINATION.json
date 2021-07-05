@@ -1,0 +1,34 @@
+{
+	"name": "DS_AZSQL_DB_DESTINATION",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZSQLDB_DESTINATION",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_SINK_SCHEMA_NAME": {
+				"type": "string"
+			},
+			"DS_SINK_TABLE_NAME": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().DS_SINK_SCHEMA_NAME",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().DS_SINK_TABLE_NAME",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,33 @@
+{
+	"name": "DS_AZVM_SQL_ON_PREMISE_METADATA_SELFHOSTED",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZVM_SQL_ON_PREMISE",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "SqlServerTable",
+		"schema": [
+			{
+				"name": "TableName",
+				"type": "varchar"
+			},
+			{
+				"name": "SinkContainerName",
+				"type": "varchar"
+			},
+			{
+				"name": "StatusFlag",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "On_PremiseSQLTablesMetData"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

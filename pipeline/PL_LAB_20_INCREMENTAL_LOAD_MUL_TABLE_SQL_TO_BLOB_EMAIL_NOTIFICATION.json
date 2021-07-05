@@ -1,0 +1,284 @@
+{
+	"name": "PL_LAB_20_INCREMENTAL_LOAD_MUL_TABLE_SQL_TO_BLOB_EMAIL_NOTIFICATION",
+	"properties": {
+		"activities": [
+			{
+				"name": "LOOKUP - WATER MARK CONFIG TABLE",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AZSQL_WATERMARK_CONFIG_MULTILOAD",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "FOR EACH - LOOP THROUGH CONFIG TABLE",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LOOKUP - WATER MARK CONFIG TABLE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LOOKUP - WATER MARK CONFIG TABLE').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "LOOKUP - GETOLD WATER MARK VALUE",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "SELECT  '@{item().LastModifyTime}' AS OldWaterMarkValue FROM WaterConfigTable WHERE TableName= '@{item().TableName}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "LOOKUP - GETNEW WATER MARK VALUE",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "SELECT MAX(@{item().WaterMarkColumnName}) AS NewWaterMarkValue FROM\n@{item().TableName}",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "COPY DATE FOR MULTI TABLE INCREMENTAL LOAD",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "LOOKUP - GETOLD WATER MARK VALUE",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								},
+								{
+									"activity": "LOOKUP - GETNEW WATER MARK VALUE",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "SELECT * FROM @{item().TableName}\nWHERE LastModifyTime >'@{activity('LOOKUP - GETOLD WATER MARK VALUE').output.firstRow.OldWaterMarkValue}'\nAND LastModifyTime <='@{activity('LOOKUP - GETNEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}'",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".csv"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+									"type": "DatasetReference"
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_SINGLE_TABLE_INCREMENTAL_OUTPUT",
+									"type": "DatasetReference"
+								}
+							]
+						},
+						{
+							"name": "SP - UPDATE WATERMARK CONFIG TABLE",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "COPY DATE FOR MULTI TABLE INCREMENTAL LOAD",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[USP_UpdateWaterMarkConfigTable]",
+								"storedProcedureParameters": {
+									"LastModifiedTime": {
+										"value": {
+											"value": "@{activity('LOOKUP - GETNEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"TableName": {
+										"value": {
+											"value": "@item().TableName",
+											"type": "Expression"
+										},
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_AZSQLDB_KV",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "SUCCESS - EMAIL NOTIFICATION",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "FOR EACH - LOOP THROUGH CONFIG TABLE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": "https://prod-65.eastus.logic.azure.com:443/workflows/fb35d1bab74b4b59a16e7219f33dbf76/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=VHoRyuEvUVItHWhPLOaPcrkZXI6h3d1JytQ2IbaI9V8",
+					"method": "POST",
+					"body": {
+						"value": "{\n\"Title\":\"PIPELINE FINISHED SUCCESSFULLY\",\n\"Message\":\"INCREMENTAL DONE SUCCESSFULLY FROM AZURE SQL TO AZURE BLOB\",\n \"Data Factory Name\":\"@{pipeline().DataFactory}\",\n  \"Pipeline Name\":\"@{pipeline().Pipeline}\",\n   \"Piepline Run ID\":\"@{pipeline().RunId}\",\n    \"Time\":\"@{utcnow()}\"\n}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "FAILURE - EMAIL NOTIFICATION",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "FOR EACH - LOOP THROUGH CONFIG TABLE",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": "https://prod-65.eastus.logic.azure.com:443/workflows/fb35d1bab74b4b59a16e7219f33dbf76/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=VHoRyuEvUVItHWhPLOaPcrkZXI6h3d1JytQ2IbaI9V8",
+					"method": "POST",
+					"body": {
+						"value": "{\n\"Title\":\"PIPELINE FINISHED SUCCESSFULLY\",\n\"Message\":\"PipeLine Got Failed\"\n \"Data Factory Name\":\"@{pipeline().DataFactory}\",\n  \"Pipeline Name\":\"@{pipeline().Pipeline}\",\n   \"Piepline Run ID\":\"@{pipeline().RunId}\",\n    \"Time\":\"@{utcnow()}\"\n}",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-15T15:15:08Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,33 @@
+{
+	"name": "DS_ON_PREMISE_SQL_SERVER_METADATA_INPUT",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SQLSERVER",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "SqlServerTable",
+		"schema": [
+			{
+				"name": "TableName",
+				"type": "varchar"
+			},
+			{
+				"name": "SinkContainerName",
+				"type": "varchar"
+			},
+			{
+				"name": "StatusFlag",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "On_PremiseSQLTablesMetData"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

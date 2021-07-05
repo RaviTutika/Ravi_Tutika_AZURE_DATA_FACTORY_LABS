@@ -1,0 +1,136 @@
+{
+	"name": "PL_LAB_07_COPY_DATA_FROM_CONTAINER_TO_CONTAINER_PARAM_METADATA",
+	"properties": {
+		"activities": [
+			{
+				"name": "LOOKUP - GET CONTAINER DETAILS",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "DS_AZBLOB_CONTAINER_METDATA_EXTRACT_INPUT_OUTPUT",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "FOREACH - LOOP THROUGH CONTAINER DATA",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LOOKUP - GET CONTAINER DETAILS",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LOOKUP - GET CONTAINER DETAILS').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "COPY DATA FROM ONE CONTAINER TO ANOTHER CONTAINER",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": true,
+										"wildcardFileName": "*",
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_CONTAINER_METADATA_INPUT",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_SOURCE_CONTAINER_PARAM": {
+											"value": "@item().SourceFolder",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_CONTAINER_METADATA_OUTPUT",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_OUTPUT_CONTAINER_PARAM": {
+											"value": "@item().TargetFolder",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-07T14:31:04Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

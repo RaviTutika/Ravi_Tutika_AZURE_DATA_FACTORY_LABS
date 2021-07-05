@@ -1,0 +1,35 @@
+{
+	"name": "DS_AZSQL_WATERMARK_CONFIG_MULTILOAD",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZSQLDB_KV",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "TableName",
+				"type": "varchar"
+			},
+			{
+				"name": "WaterMarkColumnName",
+				"type": "varchar"
+			},
+			{
+				"name": "LastModifyTime",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "WaterConfigTable"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

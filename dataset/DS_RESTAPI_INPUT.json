@@ -1,0 +1,36 @@
+{
+	"name": "DS_RESTAPI_INPUT",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_RESTAPI_JSON",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"LS_SourceURL_Param": {
+					"value": "@dataset().DS_RESTAPI_SOURCE_URL",
+					"type": "Expression"
+				}
+			}
+		},
+		"parameters": {
+			"DS_RESTAPI_SOURCE_URL": {
+				"type": "string"
+			},
+			"DS_RESTAPI_SOURCE_URL_VALUE": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": {
+				"value": "@dataset().DS_RESTAPI_SOURCE_URL_VALUE",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

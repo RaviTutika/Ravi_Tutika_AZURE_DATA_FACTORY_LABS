@@ -1,0 +1,16 @@
+{
+	"name": "LS_AZVM_SQL_ON_PREMISE",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"connectionString": "integrated security=False;data source=AZ-VM-001-DataF;initial catalog=SampleDB;user id=adminuser",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiIxYTY4NGI5Zi1mYmI0LTQ0NDYtYmZhZi1hMTIwYjViZGQ5ZTgiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "SelfhostedintegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

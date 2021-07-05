@@ -1,0 +1,26 @@
+{
+	"name": "DS_SINGLE_TABLE_INCREMENTAL_OUTPUT",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZBLOB_KV",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": "incrementaloutput"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

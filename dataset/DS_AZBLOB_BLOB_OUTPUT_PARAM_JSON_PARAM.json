@@ -1,0 +1,35 @@
+{
+	"name": "DS_AZBLOB_BLOB_OUTPUT_PARAM_JSON_PARAM",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZBLOB",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_SINK_FILE_NAME_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().DS_SINK_FILE_NAME_PARAM",
+					"type": "Expression"
+				},
+				"container": "outputjsonparam"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

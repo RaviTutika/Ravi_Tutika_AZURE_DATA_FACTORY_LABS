@@ -1,0 +1,31 @@
+{
+	"name": "DS_AZSQL_INCREMENTAL_OUTPUT_SINK",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZSQLDB_KV",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_SINK_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "dbo\n",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().DS_SINK_PARAM",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

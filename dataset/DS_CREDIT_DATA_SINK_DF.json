@@ -1,0 +1,20 @@
+{
+	"name": "DS_CREDIT_DATA_SINK_DF",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZSQLDB_KV",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "CreditData"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

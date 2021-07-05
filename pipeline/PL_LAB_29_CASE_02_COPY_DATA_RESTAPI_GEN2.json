@@ -1,0 +1,48 @@
+{
+	"name": "PL_LAB_29_CASE_02_COPY_DATA_RESTAPI_GEN2",
+	"properties": {
+		"activities": [
+			{
+				"name": "FOR EACH LOOP - CREATE ARRAY FOR VALUE",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@createArray(1,2,3,4,5,6,7,8,9,10)",
+						"type": "Expression"
+					},
+					"isSequential": false,
+					"activities": [
+						{
+							"name": "EXECUTE PIPELINE - REST API PARENT",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "PL_LAB_29_CASE_01_COPY_DATA_RESTAPI_GEN2",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"PL_SOURCE_URL_API_PARAM": "https://jsonplaceholder.typicode.com/todos/",
+									"PL_SOURCE_URL_VALUE_API_PARAM": {
+										"value": "@item()",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-18T06:57:54Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

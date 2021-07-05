@@ -1,0 +1,39 @@
+{
+	"name": "PL_LAB_37_DELETE_ARCHIEVE_DATA_SWITCH_CASE",
+	"properties": {
+		"activities": [
+			{
+				"name": "DELETE ARCHIEVE DATA",
+				"type": "Delete",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "DS_ARCHIEVE_CUSTOMER_DATA_SWITCH_CASE",
+						"type": "DatasetReference"
+					},
+					"enableLogging": false,
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"wildcardFileName": "*",
+						"enablePartitionDiscovery": false
+					}
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-23T01:49:25Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

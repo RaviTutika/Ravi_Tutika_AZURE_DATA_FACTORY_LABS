@@ -1,0 +1,35 @@
+{
+	"name": "DS_GEN2_SINK_FOLDER_FILE_WOUT_LPV",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZGEN2_DATAFACTORY",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_SINK_FOLDER_WOUTLPV_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": {
+					"value": "@dataset().DS_SINK_FOLDER_WOUTLPV_PARAM",
+					"type": "Expression"
+				},
+				"fileSystem": "withoutlpvoutput"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

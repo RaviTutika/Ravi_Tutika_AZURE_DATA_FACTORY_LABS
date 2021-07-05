@@ -1,0 +1,86 @@
+{
+	"name": "PL_LAB_37_FINAL_SWTICH_CASE",
+	"properties": {
+		"activities": [
+			{
+				"name": "SWITCH CASE FOR ACTIVITIES",
+				"type": "Switch",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"on": {
+						"value": "@pipeline().parameters.PL_SWTICH_CASE_PARAM",
+						"type": "Expression"
+					},
+					"cases": [
+						{
+							"value": "Move",
+							"activities": [
+								{
+									"name": "EXECUTE PIPELINE - MOVE",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "PL_LAB_37_MOVE_CUSTOMER_DATA_SWITCH_CASE",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true
+									}
+								}
+							]
+						},
+						{
+							"value": "Copy",
+							"activities": [
+								{
+									"name": "EXECUTE PIPELINE - COPY",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "PL_LAB_37_COPY_EMPLOYEE_DATA_COPY_SWITCH_CASE",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true
+									}
+								}
+							]
+						},
+						{
+							"value": "Delete",
+							"activities": [
+								{
+									"name": "EXECUTE PIPELINE - DELETE",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "PL_LAB_37_DELETE_ARCHIEVE_DATA_SWITCH_CASE",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true
+									}
+								}
+							]
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"PL_SWTICH_CASE_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-23T01:41:43Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,70 @@
+{
+	"name": "DF_GEN2_REMOVE_DUPLICATES_STORE_SUMMARY",
+	"properties": {
+		"folder": {
+			"name": "MASTER_DATAFACTORY_DATAFLOW"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_GEN2_SOURCE_CREDITCARD_DATA_DF",
+						"type": "DatasetReference"
+					},
+					"name": "CreditCardData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "UniquedataCreditData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQLDB_TOPPERSDATA",
+						"type": "DatasetReference"
+					},
+					"name": "ToppersData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_CREDIT_DATA_SINK_DF",
+						"type": "DatasetReference"
+					},
+					"name": "CreditData"
+				}
+			],
+			"transformations": [
+				{
+					"name": "SortCreditCardData"
+				},
+				{
+					"name": "WindowForRowNumber"
+				},
+				{
+					"name": "FilterRemoveDuplicates"
+				},
+				{
+					"name": "SelectRequiredColumn"
+				},
+				{
+					"name": "WindowGroupByCardType"
+				},
+				{
+					"name": "ConditionalSplitByDenseRank"
+				},
+				{
+					"name": "SelectColumnsFromToopersData"
+				},
+				{
+					"name": "SelectCreditData"
+				}
+			],
+			"script": "source(output(\n\t\tCredit_ID as string,\n\t\tCard_Type as string,\n\t\tCredit_name as string,\n\t\tCredtiScore as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> CreditCardData\nCreditCardData sort(asc(Credit_ID, true),\n\tasc(Card_Type, true)) ~> SortCreditCardData\nSortCreditCardData window(over(Credit_ID,\n\t\tCard_Type,\n\t\tCredit_name,\n\t\tCredtiScore),\n\tasc(Credit_ID, true),\n\tRow_Number = rowNumber()) ~> WindowForRowNumber\nWindowForRowNumber filter(Row_Number==1) ~> FilterRemoveDuplicates\nFilterRemoveDuplicates select(mapColumn(\n\t\tCredit_ID,\n\t\tCard_Type,\n\t\tCredit_name,\n\t\tCredtiScore\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredColumn\nFilterRemoveDuplicates window(over(Card_Type),\n\tdesc(CredtiScore, true),\n\tGen_Rank = rank(),\n\t\tGen_DesnseRank = denseRank(),\n\t\tRanK_RowNumber = rowNumber()) ~> WindowGroupByCardType\nWindowGroupByCardType split(Gen_DesnseRank==1,\n\tdisjoint: false) ~> ConditionalSplitByDenseRank@(ToppersData, CreditData)\nConditionalSplitByDenseRank@ToppersData select(mapColumn(\n\t\tCredit_ID,\n\t\tCard_Type,\n\t\tCredit_name,\n\t\tCredtiScore,\n\t\tRow_Number,\n\t\tGen_Rank,\n\t\tGen_DesnseRank,\n\t\tRanK_RowNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectColumnsFromToopersData\nConditionalSplitByDenseRank@CreditData select(mapColumn(\n\t\tCredit_ID,\n\t\tCard_Type,\n\t\tCredit_name,\n\t\tCredtiScore,\n\t\tRow_Number,\n\t\tGen_Rank,\n\t\tGen_DesnseRank,\n\t\tRanK_RowNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectCreditData\nSelectRequiredColumn sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['UniqueCreditCardData'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> UniquedataCreditData\nSelectColumnsFromToopersData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> ToppersData\nSelectCreditData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> CreditData"
+		}
+	}
+}

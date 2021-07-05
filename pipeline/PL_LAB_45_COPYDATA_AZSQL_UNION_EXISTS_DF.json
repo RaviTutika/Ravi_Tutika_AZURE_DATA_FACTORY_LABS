@@ -1,0 +1,37 @@
+{
+	"name": "PL_LAB_45_COPYDATA_AZSQL_UNION_EXISTS_DF",
+	"properties": {
+		"activities": [
+			{
+				"name": "DF - UNION AND EXISTS TRANSFORMATION",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF - AZSQLDB WITH UNION AND EXISTS TRANSFORMATION",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-25T01:15:53Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,48 @@
+{
+	"name": "DF_FALTTERN_TRANSFORMATIO_HIGH_PROFIT_RANK",
+	"properties": {
+		"folder": {
+			"name": "MASTER_DATAFACTORY_DATAFLOW"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_FLATTERN_DATA_ORG_INPUT",
+						"type": "DatasetReference"
+					},
+					"name": "SourceFlatterndataOrg"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQL_TOPPERS_PROFIT_ORG",
+						"type": "DatasetReference"
+					},
+					"name": "sqltableToppersData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_ORG_LIST_OUTPUT",
+						"type": "DatasetReference"
+					},
+					"name": "orglistinfordata"
+				}
+			],
+			"transformations": [
+				{
+					"name": "FlattenOrgData"
+				},
+				{
+					"name": "RankbyProfit"
+				},
+				{
+					"name": "Consplit"
+				}
+			],
+			"script": "source(output(\n\t\tid as string,\n\t\ttype as string,\n\t\tname as string,\n\t\tprofit as string,\n\t\tmanagment as (id as string, type as string)[]\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\tdocumentForm: 'arrayOfDocuments') ~> SourceFlatterndataOrg\nSourceFlatterndataOrg foldDown(unroll(managment),\n\tmapColumn(\n\t\tid,\n\t\ttype,\n\t\tname,\n\t\tprofit,\n\t\t{managment.id} = managment.id,\n\t\t{managment.type} = managment.type\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> FlattenOrgData\nFlattenOrgData rank(desc(profit, true),\n\toutput(Rank as long),\n\tdense: true) ~> RankbyProfit\nRankbyProfit split(Rank==1,\n\tdisjoint: true) ~> Consplit@(MainLevel, OrganizationList)\nConsplit@MainLevel sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> sqltableToppersData\nConsplit@OrganizationList sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> orglistinfordata"
+		}
+	}
+}

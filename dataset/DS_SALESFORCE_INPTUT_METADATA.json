@@ -1,0 +1,19 @@
+{
+	"name": "DS_SALESFORCE_INPTUT_METADATA",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_SALESFORCE",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "SalesforceObject",
+		"schema": [],
+		"typeProperties": {
+			"objectApiName": "metadata__c"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

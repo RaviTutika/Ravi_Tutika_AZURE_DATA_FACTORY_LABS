@@ -1,0 +1,65 @@
+{
+	"name": "PL_LAB_35_COPY_DATA_SNOWFLAKE_TO_GEN2",
+	"properties": {
+		"activities": [
+			{
+				"name": "COPY DATA - SNOW FLAKE TO GEN2",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SnowflakeSource",
+						"exportSettings": {
+							"type": "SnowflakeExportCopyCommand"
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": true,
+					"stagingSettings": {
+						"linkedServiceName": {
+							"referenceName": "LS_AZBLOB_SAS",
+							"type": "LinkedServiceReference"
+						},
+						"path": "csvinput"
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_SNOWFALKE_INPUT_FOR_SNOWFLAKE_TO_GEN2",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_GEN2_OUTPUT_SNOWFLAKE_TO_GEN2_ACTIVITIY",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-20T02:11:20Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

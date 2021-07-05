@@ -1,0 +1,37 @@
+{
+	"name": "DS_AZSQL_BULLOAD_TABLE_METADATA_STORAGE",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZSQLDB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "SchemaName",
+				"type": "varchar"
+			},
+			{
+				"name": "TableName",
+				"type": "varchar"
+			},
+			{
+				"name": "SinkContaineName",
+				"type": "varchar"
+			},
+			{
+				"name": "SinkFileName",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "MetaData_BulkTableLoadIntoStorage"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,45 @@
+{
+	"name": "TR_SCHEDULER",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "PL_LAB_25_COPY_FILE_LOAD_INCRMENTALLY_LAST_MODIFIED_SCHEDULE_TRIGGER",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Month",
+				"interval": 1,
+				"startTime": "2021-06-16T05:40:00",
+				"endTime": "2021-06-17T11:51:00",
+				"timeZone": "India Standard Time",
+				"schedule": {
+					"minutes": [
+						40
+					],
+					"hours": [
+						5,
+						6,
+						7,
+						8
+					],
+					"monthDays": [
+						1,
+						2,
+						3,
+						17,
+						24,
+						16,
+						15
+					]
+				}
+			}
+		}
+	}
+}

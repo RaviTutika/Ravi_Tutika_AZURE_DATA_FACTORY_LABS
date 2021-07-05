@@ -1,0 +1,20 @@
+{
+	"name": "DS_AZSQL_DB_FILESYSTEM_OUTPUT",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZSQLDB_KV",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "Orderderdata"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

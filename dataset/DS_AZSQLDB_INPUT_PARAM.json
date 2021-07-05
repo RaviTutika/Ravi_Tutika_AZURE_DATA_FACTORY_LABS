@@ -1,0 +1,34 @@
+{
+	"name": "DS_AZSQLDB_INPUT_PARAM",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZSQLDB",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_SOURCE_SCHEMA_NAME": {
+				"type": "string"
+			},
+			"DS_SOURCE_TABLE_NAME": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().DS_SOURCE_SCHEMA_NAME",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().DS_SOURCE_TABLE_NAME",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,20 @@
+{
+	"name": "DS_AZSQL_TOPPERS_PROFIT_ORG",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZSQLDB_KV",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "toppperProfitOrg"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

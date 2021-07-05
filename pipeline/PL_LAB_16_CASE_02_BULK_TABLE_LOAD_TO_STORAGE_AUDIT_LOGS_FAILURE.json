@@ -1,0 +1,384 @@
+{
+	"name": "PL_LAB_16_CASE_02_BULK_TABLE_LOAD_TO_STORAGE_AUDIT_LOGS_FAILURE",
+	"properties": {
+		"activities": [
+			{
+				"name": "LOOKUP - AZSQLBULK LOAD",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AZSQL_BULLOAD_TABLE_METADATA_STORAGE",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "FOR EACH - LOOP THROUGH META DATA",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LOOKUP - AZSQLBULK LOAD",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LOOKUP - AZSQLBULK LOAD').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "GET META DATA - TABLE EXISTENCE",
+							"type": "GetMetadata",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "DS_AZSQL_SCHEMA_TABLE_INPUT",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_SCHEMA_NAME_PARAM": {
+											"value": "@item().SchemaName",
+											"type": "Expression"
+										},
+										"DS_TABLE_NAME_PARAM": {
+											"value": "@item().TableName",
+											"type": "Expression"
+										}
+									}
+								},
+								"fieldList": [
+									"exists"
+								]
+							}
+						},
+						{
+							"name": "IF CONDITION - CHECK FOR TABLE EXISTENCE",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "GET META DATA - TABLE EXISTENCE",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@activity('GET META DATA - TABLE EXISTENCE').output.Exists",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "WAIT ACTIVTY IF TABLE NOT EXISTS",
+										"type": "Wait",
+										"dependsOn": [],
+										"userProperties": [],
+										"typeProperties": {
+											"waitTimeInSeconds": 2
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "COPY DATA FROM AZURE SQL TO AZURE STORAG",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "7.00:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "AzureSqlSource",
+												"queryTimeout": "02:00:00",
+												"partitionOption": "None"
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobStorageWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "DS_AZSQL_SCHEMA_TABLE_INPUT",
+												"type": "DatasetReference",
+												"parameters": {
+													"DS_SCHEMA_NAME_PARAM": {
+														"value": "@item().SchemaName",
+														"type": "Expression"
+													},
+													"DS_TABLE_NAME_PARAM": {
+														"value": "@item().TableName",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "DS_BULKBLOBSTORAGE_FROM_SQL_OUTPUT",
+												"type": "DatasetReference",
+												"parameters": {
+													"DS_CONTAINER_NAME_PARAM": {
+														"value": "@item().SinkContaineName1",
+														"type": "Expression"
+													},
+													"DS_FILE_NAME_PARAM": {
+														"value": "@item().SinkFileName",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "STORED PROCEDURE - SUCCESS",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "COPY DATA FROM AZURE SQL TO AZURE STORAG",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "7.00:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[dbo].[usp_auditlogs_BulkTableLoad]",
+											"storedProcedureParameters": {
+												"CopyDuration": {
+													"value": {
+														"value": "@activity('COPY DATA FROM AZURE SQL TO AZURE STORAG').output.copyDuration",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"DataFactoryName": {
+													"value": {
+														"value": "@pipeline().DataFactory",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"EndTime": {
+													"value": {
+														"value": "@activity('COPY DATA FROM AZURE SQL TO AZURE STORAG').ExecutionEndTime",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												},
+												"LoadStaus": {
+													"value": {
+														"value": "@activity('COPY DATA FROM AZURE SQL TO AZURE STORAG').Status",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"Notification": {
+													"value": {
+														"value": "@concat(pipeline().Pipeline,' Executed Successfully')",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"PipelineID": {
+													"value": {
+														"value": "@pipeline().RunId",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"PipelineName": {
+													"value": {
+														"value": "@pipeline().Pipeline",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"RowsRead": {
+													"value": {
+														"value": "@activity('COPY DATA FROM AZURE SQL TO AZURE STORAG').output.rowsCopied",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"RowsWritten": {
+													"value": {
+														"value": "@activity('COPY DATA FROM AZURE SQL TO AZURE STORAG').output.rowsRead",
+														"type": "Expression"
+													},
+													"type": "Int32"
+												},
+												"StartTime": {
+													"value": {
+														"value": "@activity('COPY DATA FROM AZURE SQL TO AZURE STORAG').ExecutionStartTime",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "LS_AZSQLDB",
+											"type": "LinkedServiceReference"
+										}
+									},
+									{
+										"name": "STORED PROCEDURE - FAILURE",
+										"type": "SqlServerStoredProcedure",
+										"dependsOn": [
+											{
+												"activity": "COPY DATA FROM AZURE SQL TO AZURE STORAG",
+												"dependencyConditions": [
+													"Failed"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "7.00:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"storedProcedureName": "[dbo].[usp_auditlogs_BulkTableLoad]",
+											"storedProcedureParameters": {
+												"CopyDuration": {
+													"value": null,
+													"type": "Int32"
+												},
+												"DataFactoryName": {
+													"value": {
+														"value": "@pipeline().DataFactory",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"EndTime": {
+													"value": {
+														"value": "@activity('COPY DATA FROM AZURE SQL TO AZURE STORAG').ExecutionEndTime",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												},
+												"LoadStaus": {
+													"value": {
+														"value": "@activity('COPY DATA FROM AZURE SQL TO AZURE STORAG').Status",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"Notification": {
+													"value": {
+														"value": "@activity('COPY DATA FROM AZURE SQL TO AZURE STORAG').Error",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"PipelineID": {
+													"value": {
+														"value": "@pipeline().RunId",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"PipelineName": {
+													"value": {
+														"value": "@pipeline().Pipeline",
+														"type": "Expression"
+													},
+													"type": "String"
+												},
+												"RowsRead": {
+													"value": null,
+													"type": "Int32"
+												},
+												"RowsWritten": {
+													"value": null,
+													"type": "Int32"
+												},
+												"StartTime": {
+													"value": {
+														"value": "@activity('COPY DATA FROM AZURE SQL TO AZURE STORAG').ExecutionStartTime",
+														"type": "Expression"
+													},
+													"type": "DateTime"
+												}
+											}
+										},
+										"linkedServiceName": {
+											"referenceName": "LS_AZSQLDB",
+											"type": "LinkedServiceReference"
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-12T17:42:10Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

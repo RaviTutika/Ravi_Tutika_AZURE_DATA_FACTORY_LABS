@@ -1,0 +1,20 @@
+{
+	"name": "DS_AZSQLDB_GEN_CUSTORDERS_DF",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZSQLDB_KV",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "CustomerOrderData"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

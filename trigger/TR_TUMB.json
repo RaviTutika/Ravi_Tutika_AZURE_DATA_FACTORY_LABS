@@ -1,0 +1,40 @@
+{
+	"name": "TR_TUMB",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipeline": {
+			"pipelineReference": {
+				"referenceName": "PL_LAB_24_CASE_01_TUMBLING_WINDOW_TRIGGER_WITHOUT_DEPENDENCY",
+				"type": "PipelineReference"
+			},
+			"parameters": {
+				"PL_WindowStartTime": "@trigger().outputs.windowStartTime",
+				"PL_WindowEndTime": "@trigger().outputs.windowEndTime",
+				"PL_TriggerTime": "@trigger().startTime"
+			}
+		},
+		"type": "TumblingWindowTrigger",
+		"typeProperties": {
+			"frequency": "Hour",
+			"interval": 24,
+			"startTime": "2020-10-01T02:24:00Z",
+			"endTime": "2020-10-04T06:24:00Z",
+			"delay": "00:00:00",
+			"maxConcurrency": 50,
+			"retryPolicy": {
+				"intervalInSeconds": 30
+			},
+			"dependsOn": [
+				{
+					"type": "TumblingWindowTriggerDependencyReference",
+					"offset": "-0.15:37:00",
+					"referenceTrigger": {
+						"referenceName": "TR_TUMBLING_WINDOW_PARENT",
+						"type": "TriggerReference"
+					}
+				}
+			]
+		}
+	}
+}

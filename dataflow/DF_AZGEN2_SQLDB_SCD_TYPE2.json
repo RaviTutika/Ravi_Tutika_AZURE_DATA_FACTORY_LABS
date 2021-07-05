@@ -1,0 +1,83 @@
+{
+	"name": "DF_AZGEN2_SQLDB_SCD_TYPE2",
+	"properties": {
+		"folder": {
+			"name": "MASTER_DATAFACTORY_DATAFLOW"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_ADLS_GEN2_SCD_INPUT",
+						"type": "DatasetReference"
+					},
+					"name": "Gen2CustomerData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQL_DIM_CUST_SCDTYPE_2",
+						"type": "DatasetReference"
+					},
+					"name": "DimCustomerTargetData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQL_DIM_CUST_SCDTYPE_2",
+						"type": "DatasetReference"
+					},
+					"name": "DimCustomerInsert"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQL_DIM_CUST_SCDTYPE_2",
+						"type": "DatasetReference"
+					},
+					"name": "DimCustomerHistory"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQL_DIM_CUST_SCDTYPE_2",
+						"type": "DatasetReference"
+					},
+					"name": "DimCustomerUpdateInsert"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DVSurroagateKey"
+				},
+				{
+					"name": "SelectRequiredTargetColumns"
+				},
+				{
+					"name": "LookupForMatchingRecords"
+				},
+				{
+					"name": "DCAction"
+				},
+				{
+					"name": "DerivedColumnSystemColumns"
+				},
+				{
+					"name": "ConditionalSplitbyAction"
+				},
+				{
+					"name": "AlterRowForInsert"
+				},
+				{
+					"name": "AlterRow1"
+				},
+				{
+					"name": "DCOldRecordsSetToInActive"
+				},
+				{
+					"name": "AlterRowForNewRecordsBasesOnUpdate"
+				}
+			],
+			"script": "source(output(\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> Gen2CustomerData\nsource(output(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long,\n\t\tstartdate as timestamp,\n\t\tenddate as timestamp,\n\t\tin_active as integer,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tquery: 'SELECT * FROM Dbo.dim_cust_SCD2 WHERE in_active=1',\n\tformat: 'query') ~> DimCustomerTargetData\nGen2CustomerData derive(Surrogate_Key = crc32(concat(toString(cust_id),custname,manager,city,toString(phno)))) ~> DVSurroagateKey\nDimCustomerTargetData select(mapColumn(\n\t\ttgt_surrogate_key = surrogate_key,\n\t\ttgt_cust_id = cust_id,\n\t\ttgt_custname = custname,\n\t\ttgt_manager = manager,\n\t\ttgt_city = city,\n\t\ttgt_phno = phno\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredTargetColumns\nDVSurroagateKey, SelectRequiredTargetColumns lookup(cust_id == tgt_cust_id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupForMatchingRecords\nLookupForMatchingRecords derive(Action = iif(isNull(tgt_cust_id),\"I\",iif((Surrogate_Key!=tgt_surrogate_key),\"U\",\"NA\"))) ~> DCAction\nDCAction derive(startdate = currentTimestamp(),\n\t\tenddate = toDate(\"9999-12-31\",\"yyyy-MM-dd\"),\n\t\tin_active = 1,\n\t\tcreated_date = currentTimestamp(),\n\t\tcreated_by = \"Data Flows\",\n\t\tupdated_date = currentTimestamp(),\n\t\tupdated_by = \"Data Flows\") ~> DerivedColumnSystemColumns\nDerivedColumnSystemColumns split(Action==\"I\",\n\tAction==\"U\",\n\tdisjoint: false) ~> ConditionalSplitbyAction@(InsertRecords, UpdateSCDHistoryRecords)\nConditionalSplitbyAction@InsertRecords alterRow(insertIf(true())) ~> AlterRowForInsert\nConditionalSplitbyAction@UpdateSCDHistoryRecords alterRow(updateIf(true())) ~> AlterRow1\nAlterRow1 derive(in_active = 0,\n\t\tupdated_date = currentTimestamp(),\n\t\tupdated_by = \"Data Flow history\",\n\t\tenddate = currentTimestamp()) ~> DCOldRecordsSetToInActive\nConditionalSplitbyAction@UpdateSCDHistoryRecords alterRow(insertIf(true())) ~> AlterRowForNewRecordsBasesOnUpdate\nAlterRowForInsert sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long,\n\t\tstartdate as timestamp,\n\t\tenddate as timestamp,\n\t\tin_active as integer,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsurrogate_key = Surrogate_Key,\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tphno,\n\t\tstartdate,\n\t\tenddate,\n\t\tin_active,\n\t\tcreated_date,\n\t\tcreated_by,\n\t\tupdated_date,\n\t\tupdated_by\n\t)) ~> DimCustomerInsert\nDCOldRecordsSetToInActive sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long,\n\t\tstartdate as timestamp,\n\t\tenddate as timestamp,\n\t\tin_active as integer,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['cust_id','surrogate_key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsurrogate_key = tgt_surrogate_key,\n\t\tcust_id = tgt_cust_id,\n\t\tenddate,\n\t\tin_active,\n\t\tupdated_date,\n\t\tupdated_by\n\t)) ~> DimCustomerHistory\nAlterRowForNewRecordsBasesOnUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long,\n\t\tstartdate as timestamp,\n\t\tenddate as timestamp,\n\t\tin_active as integer,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsurrogate_key = Surrogate_Key,\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tphno,\n\t\tstartdate,\n\t\tenddate,\n\t\tin_active,\n\t\tcreated_date,\n\t\tcreated_by,\n\t\tupdated_date,\n\t\tupdated_by\n\t)) ~> DimCustomerUpdateInsert"
+		}
+	}
+}

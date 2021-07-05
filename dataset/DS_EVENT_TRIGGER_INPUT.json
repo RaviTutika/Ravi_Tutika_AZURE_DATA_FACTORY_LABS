@@ -1,0 +1,41 @@
+{
+	"name": "DS_EVENT_TRIGGER_INPUT",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZBLOB_KV",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_CONTAINER_NAME_PARAM": {
+				"type": "string"
+			},
+			"DS_FILE_NAME_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().DS_FILE_NAME_PARAM",
+					"type": "Expression"
+				},
+				"container": {
+					"value": "@dataset().DS_CONTAINER_NAME_PARAM",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,82 @@
+{
+	"name": "PL_LAB_29_CASE_01_COPY_DATA_RESTAPI_GEN2",
+	"properties": {
+		"activities": [
+			{
+				"name": "COPY DATA REST API TO GEN2",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "RestSource",
+						"httpRequestTimeout": "00:01:40",
+						"requestInterval": "00.00:00:00.010",
+						"requestMethod": "GET"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_RESTAPI_INPUT",
+						"type": "DatasetReference",
+						"parameters": {
+							"DS_RESTAPI_SOURCE_URL": {
+								"value": "@pipeline().parameters.PL_SOURCE_URL_API_PARAM",
+								"type": "Expression"
+							},
+							"DS_RESTAPI_SOURCE_URL_VALUE": {
+								"value": "@pipeline().parameters.PL_SOURCE_URL_VALUE_API_PARAM",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_AZDATAKEGEN2_OUTPUT_RESTAPI",
+						"type": "DatasetReference",
+						"parameters": {
+							"DS_SINKFOLDER_NAME": {
+								"value": "@pipeline().parameters.PL_SOURCE_URL_VALUE_API_PARAM",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"PL_SOURCE_URL_API_PARAM": {
+				"type": "string"
+			},
+			"PL_SOURCE_URL_VALUE_API_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-18T06:57:54Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,22 @@
+{
+	"name": "DS_AZBLOB_BLOB_OUTPUT_JSON",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZBLOB",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": "covertedcsvtojson"
+			}
+		},
+		"schema": {}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

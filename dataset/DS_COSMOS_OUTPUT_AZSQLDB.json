@@ -1,0 +1,19 @@
+{
+	"name": "DS_COSMOS_OUTPUT_AZSQLDB",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_COSMOS",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "CosmosDbSqlApiCollection",
+		"schema": {},
+		"typeProperties": {
+			"collectionName": "sampleTable"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,92 @@
+{
+	"name": "PL_LAB_03_BLOB_BLOB_COPYDATA_PARAMETERS",
+	"properties": {
+		"activities": [
+			{
+				"name": "COPY DATA - BLOB TO BLOB PARAMETERIZE",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"wildcardFileName": "*",
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_BLOB_BLOB_INPUT_PARAMETER",
+						"type": "DatasetReference",
+						"parameters": {
+							"DS_INPUT_PARAM_CONTAINER": {
+								"value": "@pipeline().parameters.PL_INPUT_PARAMETER_CONTAINER",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_BLOB_BLOB_OUTPUT_PARAMETER",
+						"type": "DatasetReference",
+						"parameters": {
+							"DS_OUTPUT_PARAM_CONTAINER": {
+								"value": "@pipeline().parameters.PL_OUTPUT_PARAMETER_CONTAINER",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"PL_INPUT_PARAMETER_CONTAINER": {
+				"type": "string"
+			},
+			"PL_OUTPUT_PARAMETER_CONTAINER": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-07T11:11:52Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

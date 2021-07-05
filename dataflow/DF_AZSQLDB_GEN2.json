@@ -1,0 +1,38 @@
+{
+	"name": "DF_AZSQLDB_GEN2",
+	"properties": {
+		"folder": {
+			"name": "MASTER_DATAFACTORY_DATAFLOW"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQL_SOURCE_FOR_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "SalesOrderDetails"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_AZGEN2_SINK_DATAFLOW",
+						"type": "DatasetReference"
+					},
+					"name": "LoadDataIntoGen2"
+				}
+			],
+			"transformations": [
+				{
+					"name": "AddTotalSlaes"
+				},
+				{
+					"name": "SortByTotalSales"
+				}
+			],
+			"script": "source(output(\n\t\tSalesOrderID as integer,\n\t\tSalesOrderDetailID as integer,\n\t\tOrderQty as integer,\n\t\tProductID as integer,\n\t\tUnitPrice as decimal(19,4),\n\t\tUnitPriceDiscount as decimal(19,4),\n\t\tLineTotal as decimal(38,6),\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> SalesOrderDetails\nSalesOrderDetails derive(TotalSales = UnitPrice*OrderQty) ~> AddTotalSlaes\nAddTotalSlaes sort(desc(TotalSales, true)) ~> SortByTotalSales\nSortByTotalSales sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> LoadDataIntoGen2"
+		}
+	}
+}

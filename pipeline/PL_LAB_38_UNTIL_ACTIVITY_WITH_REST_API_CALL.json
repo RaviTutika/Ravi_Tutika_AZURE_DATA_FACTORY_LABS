@@ -1,0 +1,165 @@
+{
+	"name": "PL_LAB_38_UNTIL_ACTIVITY_WITH_REST_API_CALL",
+	"properties": {
+		"activities": [
+			{
+				"name": "UNTIL ACTIVITY - REST API TO GEN2",
+				"type": "Until",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(int(variables('CurrentID')),0)",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "COPY DATA REST API TO GEN2",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "RestSource",
+									"httpRequestTimeout": "00:01:40",
+									"requestInterval": "00.00:00:00.010",
+									"requestMethod": "GET"
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".csv"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_SOURCE_REST_API_INPUT_UNTIL_ACTIVITY",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_SOURCE_URL_PARAM": "https://jsonplaceholder.typicode.com/todos/",
+										"DS_SOURCE_RELATIVE_URL_PARAM": {
+											"value": "@variables('CurrentID')",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_SINK_REST_API_GEN2_UNTIL_ACTIVITY",
+									"type": "DatasetReference",
+									"parameters": {
+										"DS_SINK_FOLDER_NAME_PARAM": {
+											"value": "@variables('CurrentID')",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "CHECK FOR CURRENT VALUE WITH FINAL ID",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "COPY DATA REST API TO GEN2",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(int(variables('CurrentID')),int(variables('FinalID')))",
+									"type": "Expression"
+								},
+								"ifFalseActivities": [
+									{
+										"name": "SET TEMPID VALUE",
+										"type": "SetVariable",
+										"dependsOn": [],
+										"userProperties": [],
+										"typeProperties": {
+											"variableName": "tempID",
+											"value": {
+												"value": "@string(add(int(variables('CurrentID')),1))",
+												"type": "Expression"
+											}
+										}
+									},
+									{
+										"name": "SET CURRENT ID",
+										"type": "SetVariable",
+										"dependsOn": [
+											{
+												"activity": "SET TEMPID VALUE",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"userProperties": [],
+										"typeProperties": {
+											"variableName": "CurrentID",
+											"value": {
+												"value": "@variables('tempID')",
+												"type": "Expression"
+											}
+										}
+									}
+								],
+								"ifTrueActivities": [
+									{
+										"name": "SET CURRENT ID FOR EXIT",
+										"type": "SetVariable",
+										"dependsOn": [],
+										"userProperties": [],
+										"typeProperties": {
+											"variableName": "CurrentID",
+											"value": "0"
+										}
+									}
+								]
+							}
+						}
+					],
+					"timeout": "7.00:00:00"
+				}
+			}
+		],
+		"variables": {
+			"CurrentID": {
+				"type": "String",
+				"defaultValue": "1"
+			},
+			"FinalID": {
+				"type": "String",
+				"defaultValue": "10"
+			},
+			"tempID": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-22T13:27:08Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

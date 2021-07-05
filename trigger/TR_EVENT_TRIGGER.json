@@ -1,0 +1,29 @@
+{
+	"name": "TR_EVENT_TRIGGER",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "PL_LAB_23_EVENT_TRIGGER_COPY_DATA_BLOB_TO_SQL",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"PL_SOURCE_FOLDER_PARAM": "@triggerBody().folderPath",
+					"PL_FILENAME_PARAM": "@triggerBody().fileName"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/eventriggerinput/blobs/",
+			"blobPathEndsWith": ".csv",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/589236d2-94ee-4a96-957e-6be80868fac7/resourceGroups/RG-AZUREDATA_FACTORY_MASTER_PROGRAM/providers/Microsoft.Storage/storageAccounts/storageaccount07062021",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}

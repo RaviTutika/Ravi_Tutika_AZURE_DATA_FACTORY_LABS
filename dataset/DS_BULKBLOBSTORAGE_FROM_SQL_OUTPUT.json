@@ -1,0 +1,40 @@
+{
+	"name": "DS_BULKBLOBSTORAGE_FROM_SQL_OUTPUT",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZBLOB",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_CONTAINER_NAME_PARAM": {
+				"type": "string"
+			},
+			"DS_FILE_NAME_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_OUTPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@dataset().DS_FILE_NAME_PARAM",
+					"type": "Expression"
+				},
+				"container": {
+					"value": "@dataset().DS_CONTAINER_NAME_PARAM",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

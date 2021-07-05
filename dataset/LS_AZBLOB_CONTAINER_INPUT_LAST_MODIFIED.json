@@ -1,0 +1,34 @@
+{
+	"name": "LS_AZBLOB_CONTAINER_INPUT_LAST_MODIFIED",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZBLOB_KV",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"DS_SOURCE_CONTAINER_NAME": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"container": {
+					"value": "@dataset().DS_SOURCE_CONTAINER_NAME",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

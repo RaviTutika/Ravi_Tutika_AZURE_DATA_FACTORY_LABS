@@ -1,0 +1,42 @@
+{
+	"name": "DS_GEN2_SOURCE_CREDITCARD_DATA_DF",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZGEN2_DATAFACTORY",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "Excel",
+		"typeProperties": {
+			"sheetName": "Card Data",
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "CreditCardData.xlsx",
+				"fileSystem": "dataflowpart3"
+			},
+			"firstRowAsHeader": true
+		},
+		"schema": [
+			{
+				"name": "Credit_ID",
+				"type": "String"
+			},
+			{
+				"name": "Card_Type",
+				"type": "String"
+			},
+			{
+				"name": "Credit_name",
+				"type": "String"
+			},
+			{
+				"name": "CredtiScore",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

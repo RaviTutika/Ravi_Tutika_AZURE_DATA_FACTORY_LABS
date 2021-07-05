@@ -1,0 +1,97 @@
+{
+	"name": "PL_LAB_14_CASE_02_COPY_AZ_SQLDB_SQLDB_PARAMETERS_OVERWRITE_MODE",
+	"properties": {
+		"activities": [
+			{
+				"name": "COPY DATA - AZ SQL TO AZ SQL PARAM",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"preCopyScript": {
+							"value": "@{concat('TRUNCATE ','TABLE ' ,pipeline().parameters.PL_SINK_SCHEMA_PARAM,'.',pipeline().parameters.PL_SINK_TABLE_PARAM)}",
+							"type": "Expression"
+						},
+						"tableOption": "autoCreate",
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_AZSQLDB_INPUT_PARAM",
+						"type": "DatasetReference",
+						"parameters": {
+							"DS_SOURCE_SCHEMA_NAME": {
+								"value": "@pipeline().parameters.PL_SOURCE_SCHEMA_PARAM",
+								"type": "Expression"
+							},
+							"DS_SOURCE_TABLE_NAME": {
+								"value": "@pipeline().parameters.PL_SOURCE_TABLE_PARAM",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_AZSQL_DB_DESTINATION",
+						"type": "DatasetReference",
+						"parameters": {
+							"DS_SINK_SCHEMA_NAME": {
+								"value": "@pipeline().parameters.PL_SINK_SCHEMA_PARAM",
+								"type": "Expression"
+							},
+							"DS_SINK_TABLE_NAME": {
+								"value": "@pipeline().parameters.PL_SINK_TABLE_PARAM",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"PL_SOURCE_SCHEMA_PARAM": {
+				"type": "string"
+			},
+			"PL_SOURCE_TABLE_PARAM": {
+				"type": "string"
+			},
+			"PL_SINK_SCHEMA_PARAM": {
+				"type": "string"
+			},
+			"PL_SINK_TABLE_PARAM": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-12T17:42:09Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

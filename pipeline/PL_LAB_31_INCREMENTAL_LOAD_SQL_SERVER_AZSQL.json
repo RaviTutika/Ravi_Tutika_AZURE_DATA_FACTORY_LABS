@@ -1,0 +1,169 @@
+{
+	"name": "PL_LAB_31_INCREMENTAL_LOAD_SQL_SERVER_AZSQL",
+	"properties": {
+		"activities": [
+			{
+				"name": "LOOKUP - NEW WATER MARK VALUE",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderQuery": "SELECT MAX(LastModifytime) AS NewWaterMarkValue FROM \ncustomer_table",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "LS_SQLSERVER_INPUT_QUERYFOR_INCREMENTALLOAD",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "LOOK UP - OLD WATER MARK VALUE",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AZSQL_INCREMENTAL_METADATA",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "COPY DATA - INCRMENTAL LOD SQL TO AZSQL",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "LOOKUP - NEW WATER MARK VALUE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "LOOK UP - OLD WATER MARK VALUE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"sqlReaderQuery": {
+							"value": "SELECT * FROM \ncustomer_table\nWHERE LastModifytime >'@{activity('LOOK UP - OLD WATER MARK VALUE').output.firstRow.WatermarkValue}'\nAND LastModifytime<='@{activity('LOOKUP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}'",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"sqlWriterStoredProcedureName": "[dbo].[usp_upsert_customer_table]",
+						"sqlWriterTableType": "DataTypeforCustomerTable",
+						"storedProcedureTableTypeParameterName": "customer_table"
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "LS_SQLSERVER_INPUT_QUERYFOR_INCREMENTALLOAD",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_AZSQL_DESTINATION_INCREMENTAL_LOAD",
+						"type": "DatasetReference",
+						"parameters": {
+							"DS_SINK_TABLE_PARM": "customer_table"
+						}
+					}
+				]
+			},
+			{
+				"name": "STORED PROCEDURE - UPDATE METADATA",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "COPY DATA - INCRMENTAL LOD SQL TO AZSQL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[usp_UpdatewatermarktableSqlServerSQlDB]",
+					"storedProcedureParameters": {
+						"LastestModifyTime": {
+							"value": {
+								"value": "@{activity('LOOKUP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"Sourcetable": {
+							"value": "customer_table",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB_KV",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-19T03:50:40Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

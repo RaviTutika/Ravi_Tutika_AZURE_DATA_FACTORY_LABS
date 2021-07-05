@@ -1,0 +1,38 @@
+{
+	"name": "DS_AZGEN2_ORDER_DATA_DF",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZGEN2_DATAFACTORY",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "Excel",
+		"typeProperties": {
+			"sheetName": "OrderData",
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "CustData.xlsx",
+				"fileSystem": "mergelookinput"
+			},
+			"firstRowAsHeader": true
+		},
+		"schema": [
+			{
+				"name": "Order_ID",
+				"type": "String"
+			},
+			{
+				"name": "Order_name",
+				"type": "String"
+			},
+			{
+				"name": "Order_date",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

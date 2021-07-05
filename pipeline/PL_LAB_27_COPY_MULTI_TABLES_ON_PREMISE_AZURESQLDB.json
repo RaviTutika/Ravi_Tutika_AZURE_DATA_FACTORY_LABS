@@ -1,0 +1,131 @@
+{
+	"name": "PL_LAB_27_COPY_MULTI_TABLES_ON_PREMISE_AZURESQLDB",
+	"properties": {
+		"activities": [
+			{
+				"name": "LOOKUP - ON PREMISE METADATA",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SqlServerSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_AZVM_SQL_ON_PREMISE_METADATA_SELFHOSTED",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "FOREACH - LOOP THROUGH META DATA",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "LOOKUP - ON PREMISE METADATA",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('LOOKUP - ON PREMISE METADATA').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "IF CONDITION - STATUS CHECK",
+							"type": "IfCondition",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@equals(item().StatusFlag,'ready')",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "COPY DATA - ONPREMISE SQL TO SQLDB",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "7.00:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "SqlServerSource",
+												"queryTimeout": "02:00:00",
+												"partitionOption": "None"
+											},
+											"sink": {
+												"type": "AzureSqlSink",
+												"tableOption": "autoCreate",
+												"disableMetricsCollection": false
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "DS_AZSQLVM_INPUT_MULTITABLE_SELFHOSTED",
+												"type": "DatasetReference",
+												"parameters": {
+													"DS_SOURCE_TABLE_PARAM": {
+														"value": "@item().TableName",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "DS_AZSQLDB_OUTPUT_SELFHOSTED",
+												"type": "DatasetReference",
+												"parameters": {
+													"DS_SINK_TABLE_PARAM": {
+														"value": "@item().SinkContainerName",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-06-17T13:17:12Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

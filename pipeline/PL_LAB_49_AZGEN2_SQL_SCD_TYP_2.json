@@ -1,0 +1,42 @@
+{
+	"name": "PL_LAB_49_AZGEN2_SQL_SCD_TYP_2",
+	"properties": {
+		"activities": [
+			{
+				"name": "DF - AZ GEN2 TO SQL SCD TYPE 2",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF_AZGEN2_SQLDB_SCD_TYPE2",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"Gen2CustomerData": {
+								"DS_PARAM_SOURCE_PATH": "cust/2021/06/24"
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-07-02T03:54:27Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

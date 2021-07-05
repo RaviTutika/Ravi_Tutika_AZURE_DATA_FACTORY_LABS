@@ -1,0 +1,17 @@
+{
+	"name": "LS_FILESYSTEM_AZVM",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "FileServer",
+		"typeProperties": {
+			"host": "C:\\DataFolder\\",
+			"userId": "adminuser",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiIwNjE5NTJjNy05Y2FhLTRlZGEtODI4OS1lOGQ1NDJjZjBjOTUiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "SelfhostedintegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

@@ -1,0 +1,51 @@
+{
+	"name": "DF_AZGEN2_DB_JOIN_LOOKUP",
+	"properties": {
+		"folder": {
+			"name": "MASTER_DATAFACTORY_DATAFLOW"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_AZGEN2_CUST_DATA_DF",
+						"type": "DatasetReference"
+					},
+					"name": "CustData"
+				},
+				{
+					"dataset": {
+						"referenceName": "DS_AZGEN2_ORDER_DATA_DF",
+						"type": "DatasetReference"
+					},
+					"name": "OrderData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_AZSQLDB_GEN_CUSTORDERS_DF",
+						"type": "DatasetReference"
+					},
+					"name": "CustomerOrderData"
+				}
+			],
+			"transformations": [
+				{
+					"name": "LookupBasedOnOrderID"
+				},
+				{
+					"name": "SelectRenameCustColumns"
+				},
+				{
+					"name": "SelectOrderData"
+				},
+				{
+					"name": "AlterRowForDeleteInseert"
+				}
+			],
+			"script": "source(output(\n\t\tCust_id as integer,\n\t\tCust_name as string,\n\t\tCust_Score as integer,\n\t\tOrder_id as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> CustData\nsource(output(\n\t\tOrder_ID as short,\n\t\tOrder_name as string,\n\t\tOrder_date as date\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> OrderData\nSelectRenameCustColumns, SelectOrderData lookup(Cust_Order_id == Order_Order_ID,\n\tmultiple: false,\n\tpickup: 'first',\n\tdesc(Order_name, true),\n\tbroadcast: 'auto')~> LookupBasedOnOrderID\nCustData select(mapColumn(\n\t\tCust_id,\n\t\tCust_name,\n\t\tCust_Score,\n\t\tCust_Order_id = Order_id\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRenameCustColumns\nOrderData select(mapColumn(\n\t\tOrder_Order_ID = Order_ID,\n\t\tOrder_name,\n\t\tOrder_date\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectOrderData\nLookupBasedOnOrderID alterRow(deleteIf(Cust_name==\"abd\"),\n\tinsertIf(1==1)) ~> AlterRowForDeleteInseert\nAlterRowForDeleteInseert sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:false,\n\tupsertable:true,\n\tkeys:['Order_Order_ID','Cust_name'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tCust_id,\n\t\tCust_name,\n\t\tCust_Score,\n\t\tCust_Order_id,\n\t\tOrder_Order_ID,\n\t\tOrder_name,\n\t\tOrder_date\n\t)) ~> CustomerOrderData"
+		}
+	}
+}

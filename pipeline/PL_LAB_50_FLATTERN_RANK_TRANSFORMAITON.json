@@ -1,0 +1,37 @@
+{
+	"name": "PL_LAB_50_FLATTERN_RANK_TRANSFORMAITON",
+	"properties": {
+		"activities": [
+			{
+				"name": "DF - FLATTERN AND RANK",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "1.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "DF_FALTTERN_TRANSFORMATIO_HIGH_PROFIT_RANK",
+						"type": "DataFlowReference"
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": [],
+		"lastPublishTime": "2021-07-02T03:54:28Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
