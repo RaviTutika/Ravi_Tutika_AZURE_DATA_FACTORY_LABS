@@ -1,0 +1,39 @@
+{
+	"name": "DF_PIVOT_TRANSFORMATION",
+	"properties": {
+		"folder": {
+			"name": "MASTER_DATAFACTORY_DATAFLOW"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DS_DATA_INPUT_FOR_PIVOTING",
+						"type": "DatasetReference"
+					},
+					"name": "CreditCardData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_SINK_PIVOTED_DATA",
+						"type": "DatasetReference"
+					},
+					"name": "PivotData"
+				}
+			],
+			"transformations": [
+				{
+					"name": "CreditCardPivot"
+				},
+				{
+					"name": "MapDrifted",
+					"description": "Creates an explicit mapping for each drifted column"
+				}
+			],
+			"script": "source(output(\n\t\tCredit_ID as short,\n\t\tCard_Type as string,\n\t\tCredit_Name as string,\n\t\tCredit_Score as short\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: true,\n\tinferDriftedColumnTypes: true,\n\tignoreNoFilesFound: false) ~> CreditCardData\nCreditCardData pivot(groupBy(Credit_ID,\n\t\tCredit_Name),\n\tpivotBy(Card_Type),\n\t{} = sum(Credit_Score),\n\tcolumnNaming: '$N$V',\n\tlateral: true) ~> CreditCardPivot\nCreditCardPivot derive(Master = toLong(byName('Master')),\n\t\tvisa = toLong(byName('visa'))) ~> MapDrifted\nMapDrifted sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['PivotedData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> PivotData"
+		}
+	}
+}

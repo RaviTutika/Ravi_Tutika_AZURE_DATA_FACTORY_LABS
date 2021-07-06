@@ -1,0 +1,43 @@
+{
+	"name": "DS_DATA_INPUT_FOR_PIVOTING",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_AZGEN2_DATAFACTORY",
+			"type": "LinkedServiceReference"
+		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "Data.csv",
+				"fileSystem": "pivotabledata"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "Credit_ID",
+				"type": "String"
+			},
+			{
+				"name": "Card_Type",
+				"type": "String"
+			},
+			{
+				"name": "Credit_Name",
+				"type": "String"
+			},
+			{
+				"name": "Credit_Score",
+				"type": "String"
+			}
+		]
+	}
+}
