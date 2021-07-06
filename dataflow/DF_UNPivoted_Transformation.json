@@ -1,0 +1,35 @@
+{
+	"name": "DF_UNPivoted_Transformation",
+	"properties": {
+		"folder": {
+			"name": "MASTER_DATAFACTORY_DATAFLOW"
+		},
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "DF_SOURCE_PIVOTDATA",
+						"type": "DatasetReference"
+					},
+					"name": "PivotedData"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "DS_SINK_UNPIVOTDATA",
+						"type": "DatasetReference"
+					},
+					"name": "UnPivotedCreditCardData"
+				}
+			],
+			"transformations": [
+				{
+					"name": "Unpivot"
+				}
+			],
+			"script": "source(output(\n\t\tCredit_ID as short,\n\t\tCredit_Name as string,\n\t\tMaster as short,\n\t\tvisa as short\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> PivotedData\nPivotedData unpivot(output(\n\t\tCredit_Type as string,\n\t\tCredit_Score as short\n\t),\n\tungroupBy(Credit_ID,\n\t\tCredit_Name),\n\tlateral: true,\n\tignoreNullPivots: false) ~> Unpivot\nUnpivot sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['UnPivotedCreditCardData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> UnPivotedCreditCardData"
+		}
+	}
+}
