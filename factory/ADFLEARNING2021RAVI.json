@@ -1,0 +1,9 @@
+{
+	"name": "ADFLEARNING2021RAVI",
+	"location": "uksouth",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "a705c3d9-1309-41a7-936f-b1ba8fcf70c8",
+		"tenantId": "d4c0998a-c963-4162-ad42-6ff0960706ae"
+	}
+}
