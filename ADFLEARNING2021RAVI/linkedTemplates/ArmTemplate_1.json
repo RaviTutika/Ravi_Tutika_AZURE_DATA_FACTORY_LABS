@@ -33,7 +33,7 @@
 						"typeProperties": {
 							"notebookPath": "/Users/badarikrishnachaitanya@outlook.com/Data Bricks Integration With ADF",
 							"baseParameters": {
-								"l_type": "incremental",
+								"l_type": "History",
 								"p_date": "2021/07/28"
 							}
 						},
