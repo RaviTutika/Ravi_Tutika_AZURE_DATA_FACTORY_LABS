@@ -26,6 +26,9 @@
 		"LS_AZSQLDB_DESTINATION_connectionString": {
 			"value": ""
 		},
+		"LS_AZSQLDB_LOG_connectionString": {
+			"value": ""
+		},
 		"LS_AZUREDATABRICKS_accessToken": {
 			"value": ""
 		},

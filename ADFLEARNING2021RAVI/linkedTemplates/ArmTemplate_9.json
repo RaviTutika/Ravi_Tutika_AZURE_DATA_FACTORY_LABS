@@ -37,6 +37,241 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_19_INCREMENTAL_LOAD_MUL_TABLE_SQL_TO_BLOB')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LOOKUP - WATER MARK CONFIG TABLE",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_AZSQL_WATERMARK_CONFIG_MULTILOAD",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "FOR EACH - LOOP THROUGH CONFIG TABLE",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LOOKUP - WATER MARK CONFIG TABLE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LOOKUP - WATER MARK CONFIG TABLE').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "LOOKUP - GETOLD WATER MARK VALUE",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT  '@{item().LastModifyTime}' AS OldWaterMarkValue FROM WaterConfigTable WHERE TableName= '@{item().TableName}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "LOOKUP - GETNEW WATER MARK VALUE",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT MAX(@{item().WaterMarkColumnName}) AS NewWaterMarkValue FROM\n@{item().TableName}",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "COPY DATE FOR MULTI TABLE INCREMENTAL LOAD",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "LOOKUP - GETOLD WATER MARK VALUE",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										},
+										{
+											"activity": "LOOKUP - GETNEW WATER MARK VALUE",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT * FROM @{item().TableName}\nWHERE LastModifyTime >'@{activity('LOOKUP - GETOLD WATER MARK VALUE').output.firstRow.OldWaterMarkValue}'\nAND LastModifyTime <='@{activity('LOOKUP - GETNEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_SINGLE_TABLE_INCREMENTAL_OUTPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "SP - UPDATE WATERMARK CONFIG TABLE",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "COPY DATE FOR MULTI TABLE INCREMENTAL LOAD",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[USP_UpdateWaterMarkConfigTable]",
+										"storedProcedureParameters": {
+											"LastModifiedTime": {
+												"value": {
+													"value": "@{activity('LOOKUP - GETNEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}",
+													"type": "Expression"
+												},
+												"type": "DateTime"
+											},
+											"TableName": {
+												"value": {
+													"value": "@item().TableName",
+													"type": "Expression"
+												},
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_AZSQLDB_KV",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-14T18:41:40Z"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/PL_LAB_20_INCREMENTAL_LOAD_MUL_TABLE_SQL_TO_BLOB_EMAIL_NOTIFICATION')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
@@ -2342,68 +2577,6 @@
 						"intervalInSeconds": 30
 					},
 					"dependsOn": []
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/DF - AZSQLDB WITH UNION AND CONDITIONAL_SPLIT')]",
-			"type": "Microsoft.DataFactory/factories/dataflows",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"folder": {
-					"name": "MASTER_DATAFACTORY_DATAFLOW"
-				},
-				"type": "MappingDataFlow",
-				"typeProperties": {
-					"sources": [
-						{
-							"dataset": {
-								"referenceName": "DS_AZSQLDB_SOURCE_ONE_DF",
-								"type": "DatasetReference"
-							},
-							"name": "EmployeeSource"
-						},
-						{
-							"dataset": {
-								"referenceName": "DS_AZSQLDB_SOURCE_TWO_DF",
-								"type": "DatasetReference"
-							},
-							"name": "EmployeeSourcePartTwo"
-						}
-					],
-					"sinks": [
-						{
-							"dataset": {
-								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
-								"type": "DatasetReference"
-							},
-							"name": "Labdata"
-						},
-						{
-							"dataset": {
-								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
-								"type": "DatasetReference"
-							},
-							"name": "ITData"
-						},
-						{
-							"dataset": {
-								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
-								"type": "DatasetReference"
-							},
-							"name": "AccountData"
-						}
-					],
-					"transformations": [
-						{
-							"name": "EmployeeDataUnion"
-						},
-						{
-							"name": "ConditionalSplitByDepartment"
-						}
-					],
-					"script": "source(output(\n\t\tEmpID as integer,\n\t\tEmpName as string,\n\t\tDesignation as string,\n\t\tDepartment as string,\n\t\tJoiningDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> EmployeeSource\nsource(output(\n\t\tEmpID as integer,\n\t\tEmpName as string,\n\t\tDesignation as string,\n\t\tDepartment as string,\n\t\tJoiningDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> EmployeeSourcePartTwo\nEmployeeSource, EmployeeSourcePartTwo union(byName: true)~> EmployeeDataUnion\nEmployeeDataUnion split(equals(Department,\"LAB\"),\n\tequals(Department,\"IT\"),\n\tdisjoint: false) ~> ConditionalSplitByDepartment@(LABData, ITData, Accounts)\nConditionalSplitByDepartment@LABData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['LabData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> Labdata\nConditionalSplitByDepartment@ITData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['ITData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> ITData\nConditionalSplitByDepartment@Accounts sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['AccountsData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> AccountData"
 				}
 			},
 			"dependsOn": []

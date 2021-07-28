@@ -35,6 +35,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'LS_AZSQLDB_DESTINATION'"
 		},
+		"LS_AZSQLDB_LOG_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'LS_AZSQLDB_LOG'"
+		},
 		"LS_AZUREDATABRICKS_accessToken": {
 			"type": "secureString",
 			"metadata": "Secure string for 'accessToken' of 'LS_AZUREDATABRICKS'"
@@ -213,6 +217,9 @@
 					},
 					"LS_AZSQLDB_DESTINATION_connectionString": {
 						"value": "[parameters('LS_AZSQLDB_DESTINATION_connectionString')]"
+					},
+					"LS_AZSQLDB_LOG_connectionString": {
+						"value": "[parameters('LS_AZSQLDB_LOG_connectionString')]"
 					},
 					"LS_AZUREDATABRICKS_accessToken": {
 						"value": "[parameters('LS_AZUREDATABRICKS_accessToken')]"
