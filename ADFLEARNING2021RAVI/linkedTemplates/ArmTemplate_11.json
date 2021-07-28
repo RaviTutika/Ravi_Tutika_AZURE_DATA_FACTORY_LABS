@@ -1,0 +1,347 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ADFLEARNING2021RAVI"
+		},
+		"TR_EVENT_TRIGGER_properties_PL_LAB_23_EVENT_TRIGGER_COPY_DATA_BLOB_TO_SQL_parameters_PL_SOURCE_FOLDER_PARAM": {
+			"type": "string",
+			"defaultValue": "@triggerBody().folderPath"
+		},
+		"TR_EVENT_TRIGGER_properties_PL_LAB_23_EVENT_TRIGGER_COPY_DATA_BLOB_TO_SQL_parameters_PL_FILENAME_PARAM": {
+			"type": "string",
+			"defaultValue": "@triggerBody().fileName"
+		},
+		"TR_EVENT_TRIGGER_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/589236d2-94ee-4a96-957e-6be80868fac7/resourceGroups/RG-AZUREDATA_FACTORY_MASTER_PROGRAM/providers/Microsoft.Storage/storageAccounts/storageaccount07062021"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_46_REMOVE_DUPLICATES_DF')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - REMOVE DUPLICATES",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_GEN2_REMOVE_DUPLICATES_STORE_SUMMARY",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"CreditCardData": {},
+									"UniquedataCreditData": {},
+									"ToppersData": {},
+									"CreditData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-25T03:37:44Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_47_LOOKUP_MERGE_TRANSFORMATION')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - MERGE LOOKUP",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_AZGEN2_DB_JOIN_LOOKUP",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"CustData": {},
+									"OrderData": {},
+									"CustomerOrderData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Coarse"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-25T18:41:20Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_48_COPY_DATA_GEN2_SQLDB_SCD_TYP_ONE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - GEN2 TO SQL SCD TYP 1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_AZGEN2_SQLDB_SCD_TYPE_ONE",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"AzGenCustDataSCD": {
+										"DS_PARAM_SOURCE_PATH": "cust/2021/06/24"
+									},
+									"AZSQLDBDimCustomer": {},
+									"AZSQLDBSINKSCD": {},
+									"SinkForUpdateAZSQLDB": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-07-02T03:54:28Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_49_AZGEN2_SQL_SCD_TYP_2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - AZ GEN2 TO SQL SCD TYPE 2",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_AZGEN2_SQLDB_SCD_TYPE2",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"Gen2CustomerData": {
+										"DS_PARAM_SOURCE_PATH": "cust/2021/06/24"
+									},
+									"DimCustomerTargetData": {},
+									"DimCustomerInsert": {},
+									"DimCustomerHistory": {},
+									"DimCustomerUpdateInsert": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-07-02T03:54:27Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_50_FLATTERN_RANK_TRANSFORMAITON')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - FLATTERN AND RANK",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_FALTTERN_TRANSFORMATIO_HIGH_PROFIT_RANK",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"SourceFlatterndataOrg": {},
+									"sqltableToppersData": {},
+									"orglistinfordata": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-07-02T03:54:28Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TR_EVENT_TRIGGER')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "PL_LAB_23_EVENT_TRIGGER_COPY_DATA_BLOB_TO_SQL",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"PL_SOURCE_FOLDER_PARAM": "[parameters('TR_EVENT_TRIGGER_properties_PL_LAB_23_EVENT_TRIGGER_COPY_DATA_BLOB_TO_SQL_parameters_PL_SOURCE_FOLDER_PARAM')]",
+							"PL_FILENAME_PARAM": "[parameters('TR_EVENT_TRIGGER_properties_PL_LAB_23_EVENT_TRIGGER_COPY_DATA_BLOB_TO_SQL_parameters_PL_FILENAME_PARAM')]"
+						}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/eventriggerinput/blobs/",
+					"blobPathEndsWith": ".csv",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('TR_EVENT_TRIGGER_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TR_SCHEDULER')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "PL_LAB_25_COPY_FILE_LOAD_INCRMENTALLY_LAST_MODIFIED_SCHEDULE_TRIGGER",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Month",
+						"interval": 1,
+						"startTime": "2021-06-16T05:40:00",
+						"endTime": "2021-06-17T11:51:00",
+						"timeZone": "India Standard Time",
+						"schedule": {
+							"minutes": [
+								40
+							],
+							"hours": [
+								5,
+								6,
+								7,
+								8
+							],
+							"monthDays": [
+								1,
+								2,
+								3,
+								17,
+								24,
+								16,
+								15
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}

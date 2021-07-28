@@ -1,0 +1,2412 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ADFLEARNING2021RAVI"
+		},
+		"TR_TUMB_properties_pipeline_parameters_PL_WindowStartTime": {
+			"type": "string",
+			"defaultValue": "@trigger().outputs.windowStartTime"
+		},
+		"TR_TUMB_properties_pipeline_parameters_PL_WindowEndTime": {
+			"type": "string",
+			"defaultValue": "@trigger().outputs.windowEndTime"
+		},
+		"TR_TUMB_properties_pipeline_parameters_PL_TriggerTime": {
+			"type": "string",
+			"defaultValue": "@trigger().startTime"
+		},
+		"TR_TUMBLING_WINDOW_properties_pipeline_parameters_PL_WindowStartTime": {
+			"type": "string",
+			"defaultValue": "@trigger().outputs.windowStartTime"
+		},
+		"TR_TUMBLING_WINDOW_properties_pipeline_parameters_PL_WindowEndTime": {
+			"type": "string",
+			"defaultValue": "@trigger().outputs.windowEndTime"
+		},
+		"TR_TUMBLING_WINDOW_properties_pipeline_parameters_PL_TriggerTime": {
+			"type": "string",
+			"defaultValue": "@trigger().startTime"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_20_INCREMENTAL_LOAD_MUL_TABLE_SQL_TO_BLOB_EMAIL_NOTIFICATION')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LOOKUP - WATER MARK CONFIG TABLE",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_AZSQL_WATERMARK_CONFIG_MULTILOAD",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "FOR EACH - LOOP THROUGH CONFIG TABLE",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LOOKUP - WATER MARK CONFIG TABLE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LOOKUP - WATER MARK CONFIG TABLE').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "LOOKUP - GETOLD WATER MARK VALUE",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT  '@{item().LastModifyTime}' AS OldWaterMarkValue FROM WaterConfigTable WHERE TableName= '@{item().TableName}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "LOOKUP - GETNEW WATER MARK VALUE",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT MAX(@{item().WaterMarkColumnName}) AS NewWaterMarkValue FROM\n@{item().TableName}",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "COPY DATE FOR MULTI TABLE INCREMENTAL LOAD",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "LOOKUP - GETOLD WATER MARK VALUE",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										},
+										{
+											"activity": "LOOKUP - GETNEW WATER MARK VALUE",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT * FROM @{item().TableName}\nWHERE LastModifyTime >'@{activity('LOOKUP - GETOLD WATER MARK VALUE').output.firstRow.OldWaterMarkValue}'\nAND LastModifyTime <='@{activity('LOOKUP - GETNEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_SINGLE_TABLE_INCREMENTAL_OUTPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "SP - UPDATE WATERMARK CONFIG TABLE",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "COPY DATE FOR MULTI TABLE INCREMENTAL LOAD",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[USP_UpdateWaterMarkConfigTable]",
+										"storedProcedureParameters": {
+											"LastModifiedTime": {
+												"value": {
+													"value": "@{activity('LOOKUP - GETNEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}",
+													"type": "Expression"
+												},
+												"type": "DateTime"
+											},
+											"TableName": {
+												"value": {
+													"value": "@item().TableName",
+													"type": "Expression"
+												},
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_AZSQLDB_KV",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "SUCCESS - EMAIL NOTIFICATION",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "FOR EACH - LOOP THROUGH CONFIG TABLE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"url": "https://prod-65.eastus.logic.azure.com:443/workflows/fb35d1bab74b4b59a16e7219f33dbf76/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=VHoRyuEvUVItHWhPLOaPcrkZXI6h3d1JytQ2IbaI9V8",
+							"method": "POST",
+							"headers": {},
+							"body": {
+								"value": "{\n\"Title\":\"PIPELINE FINISHED SUCCESSFULLY\",\n\"Message\":\"INCREMENTAL DONE SUCCESSFULLY FROM AZURE SQL TO AZURE BLOB\",\n \"Data Factory Name\":\"@{pipeline().DataFactory}\",\n  \"Pipeline Name\":\"@{pipeline().Pipeline}\",\n   \"Piepline Run ID\":\"@{pipeline().RunId}\",\n    \"Time\":\"@{utcnow()}\"\n}",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "FAILURE - EMAIL NOTIFICATION",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "FOR EACH - LOOP THROUGH CONFIG TABLE",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"url": "https://prod-65.eastus.logic.azure.com:443/workflows/fb35d1bab74b4b59a16e7219f33dbf76/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=VHoRyuEvUVItHWhPLOaPcrkZXI6h3d1JytQ2IbaI9V8",
+							"method": "POST",
+							"headers": {},
+							"body": {
+								"value": "{\n\"Title\":\"PIPELINE FINISHED SUCCESSFULLY\",\n\"Message\":\"PipeLine Got Failed\"\n \"Data Factory Name\":\"@{pipeline().DataFactory}\",\n  \"Pipeline Name\":\"@{pipeline().Pipeline}\",\n   \"Piepline Run ID\":\"@{pipeline().RunId}\",\n    \"Time\":\"@{utcnow()}\"\n}",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-15T15:15:08Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_21_EMAIL_NOTIFICATON_LOGGING_AZURESQL_AZURESTROAGE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "BULK LOAD - MULTI LOAD TABLE",
+						"type": "ExecutePipeline",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "PL_LAB_16_CASE_02_BULK_TABLE_LOAD_TO_STORAGE_AUDIT_LOGS_FAILURE",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "FAILURE - EMAIL NOTIFICATION",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "BULK LOAD - MULTI LOAD TABLE",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"url": "https://prod-65.eastus.logic.azure.com:443/workflows/fb35d1bab74b4b59a16e7219f33dbf76/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=VHoRyuEvUVItHWhPLOaPcrkZXI6h3d1JytQ2IbaI9V8",
+							"method": "POST",
+							"headers": {},
+							"body": {
+								"value": "{\n\"Title\":\"PIPELINE NOT FINISHED SUCCESSFULLY\",\n\"Message\":\"@{activity('BULK LOAD - MULTI LOAD TABLE').error.message}\",\n \"Data Factory Name\":\"@{pipeline().DataFactory}\",\n  \"Pipeline Name\":\"@{pipeline().Pipeline}\",\n   \"Piepline Run ID\":\"@{pipeline().RunId}\",\n    \"Time\":\"@{utcnow()}\"\n}",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "SUCCESS  - EMAIL NOTIFICATION",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "BULK LOAD - MULTI LOAD TABLE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"url": "https://prod-65.eastus.logic.azure.com:443/workflows/fb35d1bab74b4b59a16e7219f33dbf76/triggers/manual/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=VHoRyuEvUVItHWhPLOaPcrkZXI6h3d1JytQ2IbaI9V8",
+							"method": "POST",
+							"headers": {},
+							"body": {
+								"value": "{\n\"Title\":\"PIPELINE FINISHED SUCCESSFULLY\",\n\"Message\":\"PipeLine Got Failed\"\n \"Data Factory Name\":\"@{pipeline().DataFactory}\",\n  \"Pipeline Name\":\"@{pipeline().Pipeline}\",\n   \"Piepline Run ID\":\"@{pipeline().RunId}\",\n    \"Time\":\"@{utcnow()}\"\n}",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-15T17:38:35Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_22_COPY_FILE_LOAD_INCRMENTALLY_LAST_MODIFIED')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LOOKUP - METADATA FILE LOAD",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_AZSQL_LASTMODIFIEDCONTAINER_INPUT",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "FOREACH - LOOP THROUGH META DATA FILE LOAD",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LOOKUP - METADATA FILE LOAD",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LOOKUP - METADATA FILE LOAD').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "SET VARIABLE - UPV",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "NewProccededValue",
+										"value": {
+											"value": "@IF(\nlessOrEquals(addminutes(item().LPV,item().Duration),convertFromUtc(utcnow(),'india standard time'))\n,addminutes(item().LPV,item().Duration),convertFromUtc(utcnow(),'india standard time'))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "COPY DATA FILE LOAD INCREMENTALLY",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "SET VARIABLE - UPV",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true,
+												"modifiedDatetimeStart": {
+													"value": "@convertToUtc(item().LPV,'india standard time')",
+													"type": "Expression"
+												},
+												"modifiedDatetimeEnd": {
+													"value": "@convertToUtc(variables('NewProccededValue'),'india standard time')",
+													"type": "Expression"
+												},
+												"wildcardFileName": "*",
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "LS_AZBLOB_CONTAINER_INPUT_LAST_MODIFIED",
+											"type": "DatasetReference",
+											"parameters": {
+												"DS_SOURCE_CONTAINER_NAME": {
+													"value": "@item().SourceContainerName",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_AZBLOB_CONTAINER_OUTUT_LAST_MODIFIED",
+											"type": "DatasetReference",
+											"parameters": {
+												"DS_SINK_CONTAINER_PARM": {
+													"value": "@item().DestinationContainerName",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "SP - UPDATE LPV",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "COPY DATA FILE LOAD INCREMENTALLY",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[USP_UpdateCONTAINER_LASTMODIFIED]",
+										"storedProcedureParameters": {
+											"SinkContainerName": {
+												"value": {
+													"value": "@item().DestinationContainerName",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"UPV": {
+												"value": {
+													"value": "@variables('NewProccededValue')",
+													"type": "Expression"
+												},
+												"type": "DateTime"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_AZSQLDB_KV",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					}
+				],
+				"variables": {
+					"NewProccededValue": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-20T01:45:46Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_23_EVENT_TRIGGER_COPY_DATA_BLOB_TO_SQL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "COPY DATA FROM BLOB TO SQLDB",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"wildcardFileName": "*",
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_EVENT_TRIGGER_INPUT",
+								"type": "DatasetReference",
+								"parameters": {
+									"DS_CONTAINER_NAME_PARAM": {
+										"value": "@pipeline().parameters.PL_SOURCE_FOLDER_PARAM",
+										"type": "Expression"
+									},
+									"DS_FILE_NAME_PARAM": {
+										"value": "@pipeline().parameters.PL_FILENAME_PARAM",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_EVENT_TRIGGER_OUTPUT_SQL",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"parameters": {
+					"PL_SOURCE_FOLDER_PARAM": {
+						"type": "string"
+					},
+					"PL_FILENAME_PARAM": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-16T05:59:34Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_25_COPY_FILE_LOAD_INCRMENTALLY_LAST_MODIFIED_SCHEDULE_TRIGGER')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LOOKUP - METADATA FILE LOAD",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_AZSQL_LASTMODIFIEDCONTAINER_INPUT",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "FOREACH - LOOP THROUGH META DATA FILE LOAD",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LOOKUP - METADATA FILE LOAD",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LOOKUP - METADATA FILE LOAD').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "SET VARIABLE - UPV",
+									"type": "SetVariable",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "NewProccededValue",
+										"value": {
+											"value": "@IF(\nlessOrEquals(addminutes(item().LPV,item().Duration),convertFromUtc(utcnow(),'india standard time'))\n,addminutes(item().LPV,item().Duration),convertFromUtc(utcnow(),'india standard time'))",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "COPY DATA FILE LOAD INCREMENTALLY",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "SET VARIABLE - UPV",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobStorageReadSettings",
+												"recursive": true,
+												"modifiedDatetimeStart": {
+													"value": "@convertToUtc(item().LPV,'india standard time')",
+													"type": "Expression"
+												},
+												"modifiedDatetimeEnd": {
+													"value": "@convertToUtc(variables('NewProccededValue'),'india standard time')",
+													"type": "Expression"
+												},
+												"wildcardFileName": "*",
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "LS_AZBLOB_CONTAINER_INPUT_LAST_MODIFIED",
+											"type": "DatasetReference",
+											"parameters": {
+												"DS_SOURCE_CONTAINER_NAME": {
+													"value": "@item().SourceContainerName",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_AZBLOB_CONTAINER_OUTUT_LAST_MODIFIED",
+											"type": "DatasetReference",
+											"parameters": {
+												"DS_SINK_CONTAINER_PARM": {
+													"value": "@item().DestinationContainerName",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "SP - UPDATE LPV",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "COPY DATA FILE LOAD INCREMENTALLY",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[USP_UpdateCONTAINER_LASTMODIFIED]",
+										"storedProcedureParameters": {
+											"SinkContainerName": {
+												"value": {
+													"value": "@item().DestinationContainerName",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"UPV": {
+												"value": {
+													"value": "@variables('NewProccededValue')",
+													"type": "Expression"
+												},
+												"type": "DateTime"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_AZSQLDB_KV",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					}
+				],
+				"variables": {
+					"NewProccededValue": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-20T01:45:46Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_26_COPY_DATA_ON_PREMISE_SQL_DATALAKEGEN2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "COPY DATA - ON PREMISE SQL TO AZURE DATA LAKE",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".csv"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_AZSQL_VM_DATA_INPUT_SELFHOSTED",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_AZGEN2_OUTPUT_SELFHOSTED",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-17T10:54:26Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_27_COPY_MULTI_TABLES_ON_PREMISE_AZURESQLDB')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LOOKUP - ON PREMISE METADATA",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_AZVM_SQL_ON_PREMISE_METADATA_SELFHOSTED",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "FOREACH - LOOP THROUGH META DATA",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LOOKUP - ON PREMISE METADATA",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LOOKUP - ON PREMISE METADATA').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "IF CONDITION - STATUS CHECK",
+									"type": "IfCondition",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@equals(item().StatusFlag,'ready')",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "COPY DATA - ONPREMISE SQL TO SQLDB",
+												"type": "Copy",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "7.00:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "SqlServerSource",
+														"queryTimeout": "02:00:00",
+														"partitionOption": "None"
+													},
+													"sink": {
+														"type": "AzureSqlSink",
+														"writeBehavior": "insert",
+														"tableOption": "autoCreate",
+														"disableMetricsCollection": false
+													},
+													"enableStaging": false,
+													"translator": {
+														"type": "TabularTranslator",
+														"typeConversion": true,
+														"typeConversionSettings": {
+															"allowDataTruncation": true,
+															"treatBooleanAsNumber": false
+														}
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "DS_AZSQLVM_INPUT_MULTITABLE_SELFHOSTED",
+														"type": "DatasetReference",
+														"parameters": {
+															"DS_SOURCE_TABLE_PARAM": {
+																"value": "@item().TableName",
+																"type": "Expression"
+															}
+														}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "DS_AZSQLDB_OUTPUT_SELFHOSTED",
+														"type": "DatasetReference",
+														"parameters": {
+															"DS_SINK_TABLE_PARAM": {
+																"value": "@item().SinkContainerName",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-17T13:17:12Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_28_FILESYSTEM_COPYDATA_TO_AZSQLDB')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "COPY DATA - FILE SYSTEM TO AZSQL DB",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "FileServerReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"writeBehavior": "insert",
+								"tableOption": "autoCreate",
+								"disableMetricsCollection": false
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_AZFILESYSTEM_INPUT",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_AZSQL_DB_FILESYSTEM_OUTPUT",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-17T14:06:41Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_29_CASE_02_COPY_DATA_RESTAPI_GEN2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "FOR EACH LOOP - CREATE ARRAY FOR VALUE",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@createArray(1,2,3,4,5,6,7,8,9,10)",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "EXECUTE PIPELINE - REST API PARENT",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "PL_LAB_29_CASE_01_COPY_DATA_RESTAPI_GEN2",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"PL_SOURCE_URL_API_PARAM": "https://jsonplaceholder.typicode.com/todos/",
+											"PL_SOURCE_URL_VALUE_API_PARAM": {
+												"value": "@item()",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-18T06:57:54Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_30_COPY_DATA_ON_PREMISE_SQL_AZURESYNAPSE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LOOKUP - TO GET ON PREMISE DATA",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": "SELECT TableName,SinkContainerName,StatusFlag FROM On_PremiseSQLTablesMetData\nWHERE StatusFlag <>'Succeeded'",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_ON_PREMISE_SQL_SERVER_METADATA_INPUT",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "FOREACH - LOOP THROUGH ONPREMISE DATA",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LOOKUP - TO GET ON PREMISE DATA",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LOOKUP - TO GET ON PREMISE DATA').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "COPY DATA - ON PREMISE SQL TO AZURE SYNAPSE",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "SqlDWSink",
+											"allowPolyBase": true,
+											"polyBaseSettings": {
+												"rejectValue": 0,
+												"rejectType": "value",
+												"useTypeDefault": true
+											},
+											"tableOption": "autoCreate",
+											"disableMetricsCollection": false
+										},
+										"enableStaging": true,
+										"stagingSettings": {
+											"linkedServiceName": {
+												"referenceName": "LS_AZGEN2_DATAFACTORY",
+												"type": "LinkedServiceReference"
+											},
+											"path": "azuresynapseforbulkandpolybase"
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_SQL_SERVER_INPUT_MULTILOAD",
+											"type": "DatasetReference",
+											"parameters": {
+												"DS_SOURCE_DATABASE_PARAM": {
+													"value": "@item().TableName",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_AZSYNAPSE_OUTPUT_MULTILOAD",
+											"type": "DatasetReference",
+											"parameters": {
+												"DS_SINK_SYNAPSE_TABLE_PARAM": {
+													"value": "@item().SinkContainerName",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "SP_UPDATE_METADATA",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "COPY DATA - ON PREMISE SQL TO AZURE SYNAPSE",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[USP_UpdateMetadata]",
+										"storedProcedureParameters": {
+											"SinkContainerName": {
+												"value": {
+													"value": "@item().SinkContainerName",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"StatusFlag": {
+												"value": "Succeeded",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_SQLSERVER",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "SP_UPDATE_METADATA_FAILURE",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "COPY DATA - ON PREMISE SQL TO AZURE SYNAPSE",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[USP_UpdateMetadata]",
+										"storedProcedureParameters": {
+											"SinkContainerName": {
+												"value": {
+													"value": "@item().SinkContainerName",
+													"type": "Expression"
+												},
+												"type": "String"
+											},
+											"StatusFlag": {
+												"value": "ready",
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_SQLSERVER",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-18T07:43:46Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_31_INCREMENTAL_LOAD_SQL_SERVER_AZSQL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LOOKUP - NEW WATER MARK VALUE",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": "SELECT MAX(LastModifytime) AS NewWaterMarkValue FROM \ncustomer_table",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "LS_SQLSERVER_INPUT_QUERYFOR_INCREMENTALLOAD",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "LOOK UP - OLD WATER MARK VALUE",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_AZSQL_INCREMENTAL_METADATA",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "COPY DATA - INCRMENTAL LOD SQL TO AZSQL",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "LOOKUP - NEW WATER MARK VALUE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "LOOK UP - OLD WATER MARK VALUE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SqlServerSource",
+								"sqlReaderQuery": {
+									"value": "SELECT * FROM \ncustomer_table\nWHERE LastModifytime >'@{activity('LOOK UP - OLD WATER MARK VALUE').output.firstRow.WatermarkValue}'\nAND LastModifytime<='@{activity('LOOKUP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}'",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "AzureSqlSink",
+								"sqlWriterStoredProcedureName": "[[dbo].[usp_upsert_customer_table]",
+								"sqlWriterTableType": "DataTypeforCustomerTable",
+								"storedProcedureTableTypeParameterName": "customer_table"
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "LS_SQLSERVER_INPUT_QUERYFOR_INCREMENTALLOAD",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_AZSQL_DESTINATION_INCREMENTAL_LOAD",
+								"type": "DatasetReference",
+								"parameters": {
+									"DS_SINK_TABLE_PARM": "customer_table"
+								}
+							}
+						]
+					},
+					{
+						"name": "STORED PROCEDURE - UPDATE METADATA",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "COPY DATA - INCRMENTAL LOD SQL TO AZSQL",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[usp_UpdatewatermarktableSqlServerSQlDB]",
+							"storedProcedureParameters": {
+								"LastestModifyTime": {
+									"value": {
+										"value": "@{activity('LOOKUP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}",
+										"type": "Expression"
+									},
+									"type": "DateTime"
+								},
+								"Sourcetable": {
+									"value": "customer_table",
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_AZSQLDB_KV",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-19T03:50:40Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_32_INCREMENTAL_LOAD_SQL_SERVER_AZSQL_copy1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "FOREACH - LOOP THROUGH INCREMENTAL LOAD",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LOOKUP - INCREMENTAL CONFIG DATA",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LOOKUP - INCREMENTAL CONFIG DATA').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "LOOKUP - NEW WATER MARK VALUE",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"sqlReaderQuery": {
+												"value": "SELECT MAX(@{item().WaterMakr_Column}) AS NewWaterMarkValue FROM \n@{item().TABLE_NAME}",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "LS_SQLSERVER_INPUT_QUERYFOR_INCREMENTALLOAD",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "LOOK UP - OLD WATER MARK VALUE",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT TableName,WatermarkValue FROM watermarktableSqlServerSQlDB\nWHERE TableName='@{item().TABLE_NAME}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "DS_AZSQL_INCREMENTAL_METADATA",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "COPY DATA - INCRMENTAL LOD SQL TO AZSQL",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "LOOK UP - OLD WATER MARK VALUE",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										},
+										{
+											"activity": "LOOKUP - NEW WATER MARK VALUE",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "SqlServerSource",
+											"sqlReaderQuery": {
+												"value": "SELECT * FROM \n@{item().TABLE_NAME}\nWHERE @{item().WaterMakr_Column} >'@{activity('LOOK UP - OLD WATER MARK VALUE').output.firstRow.WatermarkValue}'\nAND @{item().WaterMakr_Column}<='@{activity('LOOKUP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "AzureSqlSink",
+											"sqlWriterStoredProcedureName": {
+												"value": "@{item().StoredProcedureForMigration}",
+												"type": "Expression"
+											},
+											"sqlWriterTableType": {
+												"value": "@{item().Table_Type}",
+												"type": "Expression"
+											},
+											"storedProcedureTableTypeParameterName": {
+												"value": "@{item().TABLE_NAME}",
+												"type": "Expression"
+											},
+											"disableMetricsCollection": false
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "LS_SQLSERVER_INPUT_QUERYFOR_INCREMENTALLOAD",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_AZSQL_INCREMENTAL_OUTPUT_SINK",
+											"type": "DatasetReference",
+											"parameters": {
+												"DS_SINK_PARAM": {
+													"value": "@{item().TABLE_NAME}",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								},
+								{
+									"name": "STORED PROCEDURE - UPDATE METADATA",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "COPY DATA - INCRMENTAL LOD SQL TO AZSQL",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[usp_UpdatewatermarktableSqlServerSQlDB]",
+										"storedProcedureParameters": {
+											"LastestModifyTime": {
+												"value": {
+													"value": "@{activity('LOOKUP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}",
+													"type": "Expression"
+												},
+												"type": "DateTime"
+											},
+											"Sourcetable": {
+												"value": {
+													"value": "@activity('LOOK UP - OLD WATER MARK VALUE').output.firstRow.TableName",
+													"type": "Expression"
+												},
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_AZSQLDB_KV",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "LOOKUP - INCREMENTAL CONFIG DATA",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_INCREMENTAL_CONFIGDATA_MULTILOAD",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-19T08:20:40Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_36_COPY_DATA_SQLDB_COSMOSDB')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "COPY DATA - SQLDB TO COSMOS DB",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "CosmosDbSqlApiSink",
+								"writeBehavior": "insert"
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_AZSQL_COSMOSDB_INPUT",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_COSMOS_OUTPUT_AZSQLDB",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-20T02:26:03Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_37_FINAL_SWTICH_CASE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "SWITCH CASE FOR ACTIVITIES",
+						"type": "Switch",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"on": {
+								"value": "@pipeline().parameters.PL_SWTICH_CASE_PARAM",
+								"type": "Expression"
+							},
+							"cases": [
+								{
+									"value": "Move",
+									"activities": [
+										{
+											"name": "EXECUTE PIPELINE - MOVE",
+											"type": "ExecutePipeline",
+											"dependsOn": [],
+											"userProperties": [],
+											"typeProperties": {
+												"pipeline": {
+													"referenceName": "PL_LAB_37_MOVE_CUSTOMER_DATA_SWITCH_CASE",
+													"type": "PipelineReference"
+												},
+												"waitOnCompletion": true,
+												"parameters": {}
+											}
+										}
+									]
+								},
+								{
+									"value": "Copy",
+									"activities": [
+										{
+											"name": "EXECUTE PIPELINE - COPY",
+											"type": "ExecutePipeline",
+											"dependsOn": [],
+											"userProperties": [],
+											"typeProperties": {
+												"pipeline": {
+													"referenceName": "PL_LAB_37_COPY_EMPLOYEE_DATA_COPY_SWITCH_CASE",
+													"type": "PipelineReference"
+												},
+												"waitOnCompletion": true,
+												"parameters": {}
+											}
+										}
+									]
+								},
+								{
+									"value": "Delete",
+									"activities": [
+										{
+											"name": "EXECUTE PIPELINE - DELETE",
+											"type": "ExecutePipeline",
+											"dependsOn": [],
+											"userProperties": [],
+											"typeProperties": {
+												"pipeline": {
+													"referenceName": "PL_LAB_37_DELETE_ARCHIEVE_DATA_SWITCH_CASE",
+													"type": "PipelineReference"
+												},
+												"waitOnCompletion": true,
+												"parameters": {}
+											}
+										}
+									]
+								}
+							]
+						}
+					}
+				],
+				"parameters": {
+					"PL_SWTICH_CASE_PARAM": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-23T01:41:43Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_39_PARENT_INCREMENTAL_COPY_FILES_WITHOUT_LPV')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "GET META DATA - LOOP THROUGH FOLDERS",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DS_AZGEN2_WOUT_LPV_GET_FOLDER_NAMES",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "FOREACH - LOOP THROUGH FOLDERS",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "GET META DATA - LOOP THROUGH FOLDERS",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('GET META DATA - LOOP THROUGH FOLDERS').output.childitems",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "EXECUTE PIPELINE - LOOP THROUGH FILES",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "PL_LAB_39_CHILD_INCREMENTAML_FILE_COPY_WITHPUT_LPV",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"PL_CHILD_FOLDER_NAME_PARAM": {
+												"value": "@item().name",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-22T12:07:37Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_40_PARENT_NESTED_FOREACH_ALTERNATED_SOLUTION')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "GET META DATA - GET DIRECTORY NAMES",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "DS_AZGEN2_GETFOLDERS_NAMES_INPUT_NESTED_FOREACH",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"childItems"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "FOREACH - LOOP THROUGH FOLDER",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "GET META DATA - GET DIRECTORY NAMES",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('GET META DATA - GET DIRECTORY NAMES').output.childitems",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "INVOKE CHILD PIPELINE TO LOOP THROUGH FOLDERS",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "PL_LAB_40_CHILD_NESTED_FOREACH_ALTERNATED_SOLUTION",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {
+											"PL_CHILD_PIPELINE_FOLDER_PARAM": {
+												"value": "@item().name",
+												"type": "Expression"
+											}
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-22T11:04:11Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_51_PIVOT_TRANSFORMATION')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - PIVOT TRANSFORMATION",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_PIVOT_TRANSFORMATION",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"CreditCardData": {},
+									"PivotData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "DF - UNPIVOT TRANSFORMATION",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "DF - PIVOT TRANSFORMATION",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_UNPivoted_Transformation",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"PivotedData": {},
+									"UnPivotedCreditCardData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TR_TUMB')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipeline": {
+					"pipelineReference": {
+						"referenceName": "PL_LAB_24_CASE_01_TUMBLING_WINDOW_TRIGGER_WITHOUT_DEPENDENCY",
+						"type": "PipelineReference"
+					},
+					"parameters": {
+						"PL_WindowStartTime": "[parameters('TR_TUMB_properties_pipeline_parameters_PL_WindowStartTime')]",
+						"PL_WindowEndTime": "[parameters('TR_TUMB_properties_pipeline_parameters_PL_WindowEndTime')]",
+						"PL_TriggerTime": "[parameters('TR_TUMB_properties_pipeline_parameters_PL_TriggerTime')]"
+					}
+				},
+				"type": "TumblingWindowTrigger",
+				"typeProperties": {
+					"frequency": "Hour",
+					"interval": 24,
+					"startTime": "2020-10-01T02:24:00Z",
+					"endTime": "2020-10-04T06:24:00Z",
+					"delay": "00:00:00",
+					"maxConcurrency": 50,
+					"retryPolicy": {
+						"intervalInSeconds": 30
+					},
+					"dependsOn": [
+						{
+							"type": "TumblingWindowTriggerDependencyReference",
+							"offset": "-0.15:37:00",
+							"referenceTrigger": {
+								"referenceName": "TR_TUMBLING_WINDOW_PARENT",
+								"type": "TriggerReference"
+							}
+						}
+					]
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TR_TUMBLING_WINDOW')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipeline": {
+					"pipelineReference": {
+						"referenceName": "PL_LAB_24_CASE_01_TUMBLING_WINDOW_TRIGGER_WITHOUT_DEPENDENCY",
+						"type": "PipelineReference"
+					},
+					"parameters": {
+						"PL_WindowStartTime": "[parameters('TR_TUMBLING_WINDOW_properties_pipeline_parameters_PL_WindowStartTime')]",
+						"PL_WindowEndTime": "[parameters('TR_TUMBLING_WINDOW_properties_pipeline_parameters_PL_WindowEndTime')]",
+						"PL_TriggerTime": "[parameters('TR_TUMBLING_WINDOW_properties_pipeline_parameters_PL_TriggerTime')]"
+					}
+				},
+				"type": "TumblingWindowTrigger",
+				"typeProperties": {
+					"frequency": "Hour",
+					"interval": 24,
+					"startTime": "2020-10-01T08:45:00Z",
+					"endTime": "2020-10-04T08:45:00Z",
+					"delay": "00:00:00",
+					"maxConcurrency": 50,
+					"retryPolicy": {
+						"intervalInSeconds": 30
+					},
+					"dependsOn": []
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF - AZSQLDB WITH UNION AND CONDITIONAL_SPLIT')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLDB_SOURCE_ONE_DF",
+								"type": "DatasetReference"
+							},
+							"name": "EmployeeSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLDB_SOURCE_TWO_DF",
+								"type": "DatasetReference"
+							},
+							"name": "EmployeeSourcePartTwo"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "Labdata"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "ITData"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "AccountData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "EmployeeDataUnion"
+						},
+						{
+							"name": "ConditionalSplitByDepartment"
+						}
+					],
+					"script": "source(output(\n\t\tEmpID as integer,\n\t\tEmpName as string,\n\t\tDesignation as string,\n\t\tDepartment as string,\n\t\tJoiningDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> EmployeeSource\nsource(output(\n\t\tEmpID as integer,\n\t\tEmpName as string,\n\t\tDesignation as string,\n\t\tDepartment as string,\n\t\tJoiningDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> EmployeeSourcePartTwo\nEmployeeSource, EmployeeSourcePartTwo union(byName: true)~> EmployeeDataUnion\nEmployeeDataUnion split(equals(Department,\"LAB\"),\n\tequals(Department,\"IT\"),\n\tdisjoint: false) ~> ConditionalSplitByDepartment@(LABData, ITData, Accounts)\nConditionalSplitByDepartment@LABData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['LabData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> Labdata\nConditionalSplitByDepartment@ITData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['ITData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> ITData\nConditionalSplitByDepartment@Accounts sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['AccountsData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> AccountData"
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}

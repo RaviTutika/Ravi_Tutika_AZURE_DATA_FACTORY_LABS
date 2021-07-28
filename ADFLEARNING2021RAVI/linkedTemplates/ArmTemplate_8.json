@@ -1,0 +1,1127 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ADFLEARNING2021RAVI"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQL_TABLE_PRODUCT_SOURCE_DATAFLOW')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB_KV",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "ProductID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Name",
+						"type": "nvarchar"
+					},
+					{
+						"name": "ProductNumber",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Color",
+						"type": "nvarchar"
+					},
+					{
+						"name": "StandardCost",
+						"type": "money",
+						"precision": 19,
+						"scale": 4
+					},
+					{
+						"name": "ListPrice",
+						"type": "money",
+						"precision": 19,
+						"scale": 4
+					},
+					{
+						"name": "Size",
+						"type": "nvarchar"
+					},
+					{
+						"name": "Weight",
+						"type": "decimal",
+						"precision": 8,
+						"scale": 2
+					},
+					{
+						"name": "ProductCategoryID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "ProductModelID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "SellStartDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "SellEndDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "DiscontinuedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					},
+					{
+						"name": "ThumbNailPhoto",
+						"type": "varbinary"
+					},
+					{
+						"name": "ThumbnailPhotoFileName",
+						"type": "nvarchar"
+					},
+					{
+						"name": "rowguid",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "SalesLT",
+					"table": "Product"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQL_TOPPERS_PROFIT_ORG')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB_KV",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "toppperProfitOrg"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQL_VM_DATA_INPUT_SELFHOSTED')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZVM_SQL_ON_PREMISE",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [
+					{
+						"name": "EmpID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "EmpName",
+						"type": "varchar"
+					},
+					{
+						"name": "Location",
+						"type": "varchar"
+					},
+					{
+						"name": "LastModifyTime",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "EmployeeTable"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQL_WATERMARK_CONFIG_MULTILOAD')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB_KV",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "TableName",
+						"type": "varchar"
+					},
+					{
+						"name": "WaterMarkColumnName",
+						"type": "varchar"
+					},
+					{
+						"name": "LastModifyTime",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "WaterConfigTable"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZVM_SQL_ON_PREMISE_METADATA_SELFHOSTED')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZVM_SQL_ON_PREMISE",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [
+					{
+						"name": "TableName",
+						"type": "varchar"
+					},
+					{
+						"name": "SinkContainerName",
+						"type": "varchar"
+					},
+					{
+						"name": "StatusFlag",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "On_PremiseSQLTablesMetData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_CREDIT_DATA_SINK_DF')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB_KV",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "CreditData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_EVENT_TRIGGER_INPUT')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZBLOB_KV",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_CONTAINER_NAME_PARAM": {
+						"type": "string"
+					},
+					"DS_FILE_NAME_PARAM": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().DS_FILE_NAME_PARAM",
+							"type": "Expression"
+						},
+						"container": {
+							"value": "@dataset().DS_CONTAINER_NAME_PARAM",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_EVENT_TRIGGER_OUTPUT_SQL')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB_KV",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "EventTriggerData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_INCREMENTAL_CONFIGDATA_MULTILOAD')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB_KV",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "TABLE_NAME",
+						"type": "varchar"
+					},
+					{
+						"name": "WaterMakr_Column",
+						"type": "varchar"
+					},
+					{
+						"name": "Table_Type",
+						"type": "varchar"
+					},
+					{
+						"name": "StoredProcedureForMigration",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "IncrementalLoad_ConfigTable"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_ON_PREMISE_SQL_SERVER_METADATA_INPUT')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQLSERVER",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [
+					{
+						"name": "TableName",
+						"type": "varchar"
+					},
+					{
+						"name": "SinkContainerName",
+						"type": "varchar"
+					},
+					{
+						"name": "StatusFlag",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "On_PremiseSQLTablesMetData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_ORG_LIST_OUTPUT')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB_KV",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "OrgListData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_SINGLE_TABLE_INCREMENTAL_OUTPUT')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZBLOB_KV",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "incrementaloutput"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_SQL_SERVER_INPUT_MULTILOAD')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQLSERVER",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_SOURCE_DATABASE_PARAM": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": {
+						"value": "@dataset().DS_SOURCE_DATABASE_PARAM",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_AZBLOB_CONTAINER_INPUT_LAST_MODIFIED')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZBLOB_KV",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_SOURCE_CONTAINER_NAME": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": {
+							"value": "@dataset().DS_SOURCE_CONTAINER_NAME",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/LS_SQLSERVER_INPUT_QUERYFOR_INCREMENTALLOAD')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SQLSERVER",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "SqlServerTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_PIVOT_TRANSFORMATION')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_DATA_INPUT_FOR_PIVOTING",
+								"type": "DatasetReference"
+							},
+							"name": "CreditCardData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_SINK_PIVOTED_DATA",
+								"type": "DatasetReference"
+							},
+							"name": "PivotData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "CreditCardPivot"
+						},
+						{
+							"name": "MapDrifted",
+							"description": "Creates an explicit mapping for each drifted column"
+						}
+					],
+					"script": "source(output(\n\t\tCredit_ID as short,\n\t\tCard_Type as string,\n\t\tCredit_Name as string,\n\t\tCredit_Score as short\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: true,\n\tinferDriftedColumnTypes: true,\n\tignoreNoFilesFound: false) ~> CreditCardData\nCreditCardData pivot(groupBy(Credit_ID,\n\t\tCredit_Name),\n\tpivotBy(Card_Type),\n\t{} = sum(Credit_Score),\n\tcolumnNaming: '$N$V',\n\tlateral: true) ~> CreditCardPivot\nCreditCardPivot derive(Master = toLong(byName('Master')),\n\t\tvisa = toLong(byName('visa'))) ~> MapDrifted\nMapDrifted sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['PivotedData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> PivotData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_UNPivoted_Transformation')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DF_SOURCE_PIVOTDATA",
+								"type": "DatasetReference"
+							},
+							"name": "PivotedData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_SINK_UNPIVOTDATA",
+								"type": "DatasetReference"
+							},
+							"name": "UnPivotedCreditCardData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "Unpivot"
+						}
+					],
+					"script": "source(output(\n\t\tCredit_ID as short,\n\t\tCredit_Name as string,\n\t\tMaster as short,\n\t\tvisa as short\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> PivotedData\nPivotedData unpivot(output(\n\t\tCredit_Type as string,\n\t\tCredit_Score as short\n\t),\n\tungroupBy(Credit_ID,\n\t\tCredit_Name),\n\tlateral: true,\n\tignoreNullPivots: false) ~> Unpivot\nUnpivot sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['UnPivotedCreditCardData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> UnPivotedCreditCardData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_17_COPY_DATA_AZSQLTABLE_STORAGE_KV')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "COPY DATA - AZSQL TO BLOB KV",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".csv"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_AZSQLDB_KV_INPUT",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_AZBLOB_SINK_KV_OUTPUT",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-13T16:08:17Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_18_ONE_TABLE_INCREMENTAL_LOAD_SQL_TO_BLOB')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LOOKUP - GET OLD WATER MARK VALUE",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_AZSQL_INCREMENTAL_WATERMARK_COLUMN_SINGLE",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "LOOK UP - NEW WATER MARK VALUE",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": "SELECT MAX(LastModifyTime) AS [NewWaterMarkValue] FROM EmployeeTable",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_AZSQL_INCREMENTAL_WATERMARK_COLUMN_SINGLE",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": true
+						}
+					},
+					{
+						"name": "COPY DATA - INCREMENTAL LOAD",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "LOOKUP - GET OLD WATER MARK VALUE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "LOOK UP - NEW WATER MARK VALUE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "SELECT * FROM EmployeeTable\nWHERE LastModifyTime >'@{activity('LOOKUP - GET OLD WATER MARK VALUE').output.firstRow.LastModifyTime}'\nAND LastModifyTime <='@{activity('LOOK UP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}'",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".csv"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_AZSQL_INCREMENTAL_WATERMARK_COLUMN_SINGLE",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_SINGLE_TABLE_INCREMENTAL_OUTPUT",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "SP_FOR_UPDATE_WATERMARK_TABLE",
+						"type": "SqlServerStoredProcedure",
+						"dependsOn": [
+							{
+								"activity": "COPY DATA - INCREMENTAL LOAD",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"storedProcedureName": "[[dbo].[USP_UpdateWaterMarkTable]",
+							"storedProcedureParameters": {
+								"LastModifiedTime": {
+									"value": {
+										"value": "@activity('LOOK UP - NEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue",
+										"type": "Expression"
+									},
+									"type": "DateTime"
+								},
+								"TableName": {
+									"value": {
+										"value": "@activity('LOOKUP - GET OLD WATER MARK VALUE').output.firstRow.TableName",
+										"type": "Expression"
+									},
+									"type": "String"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_AZSQLDB_KV",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-14T15:48:10Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_SINGLE_TABLE_INCREMENTAL_OUTPUT')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_19_INCREMENTAL_LOAD_MUL_TABLE_SQL_TO_BLOB')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "LOOKUP - WATER MARK CONFIG TABLE",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "DS_AZSQL_WATERMARK_CONFIG_MULTILOAD",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "FOR EACH - LOOP THROUGH CONFIG TABLE",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "LOOKUP - WATER MARK CONFIG TABLE",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('LOOKUP - WATER MARK CONFIG TABLE').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "LOOKUP - GETOLD WATER MARK VALUE",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT  '@{item().LastModifyTime}' AS OldWaterMarkValue FROM WaterConfigTable WHERE TableName= '@{item().TableName}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "LOOKUP - GETNEW WATER MARK VALUE",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT MAX(@{item().WaterMarkColumnName}) AS NewWaterMarkValue FROM\n@{item().TableName}",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "COPY DATE FOR MULTI TABLE INCREMENTAL LOAD",
+									"type": "Copy",
+									"dependsOn": [
+										{
+											"activity": "LOOKUP - GETOLD WATER MARK VALUE",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										},
+										{
+											"activity": "LOOKUP - GETNEW WATER MARK VALUE",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "SELECT * FROM @{item().TableName}\nWHERE LastModifyTime >'@{activity('LOOKUP - GETOLD WATER MARK VALUE').output.firstRow.OldWaterMarkValue}'\nAND LastModifyTime <='@{activity('LOOKUP - GETNEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}'",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"sink": {
+											"type": "DelimitedTextSink",
+											"storeSettings": {
+												"type": "AzureBlobStorageWriteSettings"
+											},
+											"formatSettings": {
+												"type": "DelimitedTextWriteSettings",
+												"quoteAllText": true,
+												"fileExtension": ".csv"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_AZSQL_INCREMENTAL_TABLE_MULTI_INPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_SINGLE_TABLE_INCREMENTAL_OUTPUT",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									]
+								},
+								{
+									"name": "SP - UPDATE WATERMARK CONFIG TABLE",
+									"type": "SqlServerStoredProcedure",
+									"dependsOn": [
+										{
+											"activity": "COPY DATE FOR MULTI TABLE INCREMENTAL LOAD",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"storedProcedureName": "[[dbo].[USP_UpdateWaterMarkConfigTable]",
+										"storedProcedureParameters": {
+											"LastModifiedTime": {
+												"value": {
+													"value": "@{activity('LOOKUP - GETNEW WATER MARK VALUE').output.firstRow.NewWaterMarkValue}",
+													"type": "Expression"
+												},
+												"type": "DateTime"
+											},
+											"TableName": {
+												"value": {
+													"value": "@item().TableName",
+													"type": "Expression"
+												},
+												"type": "String"
+											}
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "LS_AZSQLDB_KV",
+										"type": "LinkedServiceReference"
+									}
+								}
+							]
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-14T18:41:40Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_AZSQL_WATERMARK_CONFIG_MULTILOAD')]",
+				"[concat(variables('factoryId'), '/datasets/DS_SINGLE_TABLE_INCREMENTAL_OUTPUT')]"
+			]
+		}
+	]
+}

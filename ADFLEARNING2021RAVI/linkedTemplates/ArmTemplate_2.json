@@ -1,0 +1,768 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ADFLEARNING2021RAVI"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZGEN2_INPUT_GETFILES_INPUT_NESTED_FOREACH')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZGEN2_DATAFACTORY",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_FOLDER_NAME_PARAM_NESTED_FOREACH": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "@dataset().DS_FOLDER_NAME_PARAM_NESTED_FOREACH",
+							"type": "Expression"
+						},
+						"fileSystem": "nestedforeachinput"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "FirstName",
+						"type": "String"
+					},
+					{
+						"name": "LastName",
+						"type": "String"
+					},
+					{
+						"name": "Gender",
+						"type": "String"
+					},
+					{
+						"name": "TotalChildren",
+						"type": "String"
+					},
+					{
+						"name": "YearlyIncome",
+						"type": "String"
+					},
+					{
+						"name": "EnglishEducation",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZGEN2_ORDER_DATA_DF')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZGEN2_DATAFACTORY",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "Excel",
+				"typeProperties": {
+					"sheetName": "OrderData",
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "CustData.xlsx",
+						"fileSystem": "mergelookinput"
+					},
+					"firstRowAsHeader": true
+				},
+				"schema": [
+					{
+						"name": "Order_ID",
+						"type": "String"
+					},
+					{
+						"name": "Order_name",
+						"type": "String"
+					},
+					{
+						"name": "Order_date",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZGEN2_OUTPUT_SELFHOSTED')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZGEN2_DATAFACTORY",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "selfhostedoutput"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZGEN2_SINK_DATAFLOW')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZGEN2_DATAFACTORY",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "dataflowbasic"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZGEN2_WOUT_LPV_GET_FOLDER_NAMES')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZGEN2_DATAFACTORY",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "withoutlpv"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSNOWFLAKE_OUTPUT_FROM_GEN2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_SNOWFLAKE",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "SnowflakeTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "SampleSchema",
+					"table": "employeeData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQLDB_INPUT_PARAM')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_SOURCE_SCHEMA_NAME": {
+						"type": "string"
+					},
+					"DS_SOURCE_TABLE_NAME": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().DS_SOURCE_SCHEMA_NAME",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().DS_SOURCE_TABLE_NAME",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQLDB_SALESORDER_DETAILS_INPUT')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "SalesOrderID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "SalesOrderDetailID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "OrderQty",
+						"type": "smallint",
+						"precision": 5
+					},
+					{
+						"name": "ProductID",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "UnitPrice",
+						"type": "money",
+						"precision": 19,
+						"scale": 4
+					},
+					{
+						"name": "UnitPriceDiscount",
+						"type": "money",
+						"precision": 19,
+						"scale": 4
+					},
+					{
+						"name": "LineTotal",
+						"type": "decimal",
+						"precision": 38,
+						"scale": 6
+					},
+					{
+						"name": "rowguid",
+						"type": "uniqueidentifier"
+					},
+					{
+						"name": "ModifiedDate",
+						"type": "datetime",
+						"precision": 23,
+						"scale": 3
+					}
+				],
+				"typeProperties": {
+					"schema": "SalesLT",
+					"table": "SalesOrderDetail"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQLSTORAGE_OUTPUT_FROM_SQLDB')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZBLOB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "sqldboutput"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQL_BULLOAD_TABLE_METADATA_STORAGE')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "SchemaName",
+						"type": "varchar"
+					},
+					{
+						"name": "TableName",
+						"type": "varchar"
+					},
+					{
+						"name": "SinkContaineName",
+						"type": "varchar"
+					},
+					{
+						"name": "SinkFileName",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "MetaData_BulkTableLoadIntoStorage"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQL_DB_DESTINATION')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB_DESTINATION",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_SINK_SCHEMA_NAME": {
+						"type": "string"
+					},
+					"DS_SINK_TABLE_NAME": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().DS_SINK_SCHEMA_NAME",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().DS_SINK_TABLE_NAME",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQL_GEN2_S3_OUTPUT')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZGEN2_DATAFACTORY",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileSystem": "amazons3bucket"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSQL_SCHEMA_TABLE_INPUT')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZSQLDB",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_SCHEMA_NAME_PARAM": {
+						"type": "string"
+					},
+					"DS_TABLE_NAME_PARAM": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": {
+						"value": "@dataset().DS_SCHEMA_NAME_PARAM",
+						"type": "Expression"
+					},
+					"table": {
+						"value": "@dataset().DS_TABLE_NAME_PARAM",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_AZSYNAPSE_OUTPUT_MULTILOAD')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AzureSynapseAnalytics",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_SINK_SYNAPSE_TABLE_PARAM": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "AzureSqlDWTable",
+				"schema": [],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": {
+						"value": "@dataset().DS_SINK_SYNAPSE_TABLE_PARAM",
+						"type": "Expression"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_BLOB_BLOB_INPUT_PARAMETER')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZBLOB",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_INPUT_PARAM_CONTAINER": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": {
+							"value": "@dataset().DS_INPUT_PARAM_CONTAINER",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_BLOB_BLOB_OUTPUT_PARAMETER')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZBLOB",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_OUTPUT_PARAM_CONTAINER": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": {
+							"value": "@dataset().DS_OUTPUT_PARAM_CONTAINER",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_BULKBLOBSTORAGE_FROM_SQL_OUTPUT')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZBLOB",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_CONTAINER_NAME_PARAM": {
+						"type": "string"
+					},
+					"DS_FILE_NAME_PARAM": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@dataset().DS_FILE_NAME_PARAM",
+							"type": "Expression"
+						},
+						"container": {
+							"value": "@dataset().DS_CONTAINER_NAME_PARAM",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_CLOUD_AWS_INPUT_S3')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AWS_S3",
+					"type": "LinkedServiceReference"
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AmazonS3Location",
+						"bucketName": "aws-s3-bucket-demo-ravi",
+						"folderPath": "Allfiles"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "FirstName",
+						"type": "String"
+					},
+					{
+						"name": "LastName",
+						"type": "String"
+					},
+					{
+						"name": "Gender",
+						"type": "String"
+					},
+					{
+						"name": "TotalChildren",
+						"type": "String"
+					},
+					{
+						"name": "YearlyIncome",
+						"type": "String"
+					},
+					{
+						"name": "EnglishEducation",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_CONTAINER_METADATA_INPUT')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZBLOB",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_SOURCE_CONTAINER_PARAM": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_INPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": {
+							"value": "@dataset().DS_SOURCE_CONTAINER_PARAM",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_CONTAINER_METADATA_OUTPUT')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZBLOB",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_OUTPUT_CONTAINER_PARAM": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": {
+							"value": "@dataset().DS_OUTPUT_CONTAINER_PARAM",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		}
+	]
+}

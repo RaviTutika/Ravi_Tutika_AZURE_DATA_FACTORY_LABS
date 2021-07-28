@@ -1,0 +1,1082 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ADFLEARNING2021RAVI"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/DF - AZSQLDB WITH UNION AND EXISTS TRANSFORMATION')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLDB_SOURCE_ONE_DF",
+								"type": "DatasetReference"
+							},
+							"name": "EmployeeSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLDB_SOURCE_TWO_DF",
+								"type": "DatasetReference"
+							},
+							"name": "EmployeeSourcePartTwo"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLBD_COMPLETE_DF",
+								"type": "DatasetReference"
+							},
+							"name": "EmployeeDataSinkForCheck"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLBD_COMPLETE_DF",
+								"type": "DatasetReference"
+							},
+							"name": "CompleteEmployeeSinkData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "EmployeeDataUnion"
+						},
+						{
+							"name": "CheckForNotExistsOfData"
+						}
+					],
+					"script": "source(output(\n\t\tEmpID as integer,\n\t\tEmpName as string,\n\t\tDesignation as string,\n\t\tDepartment as string,\n\t\tJoiningDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> EmployeeSource\nsource(output(\n\t\tEmpID as integer,\n\t\tEmpName as string,\n\t\tDesignation as string,\n\t\tDepartment as string,\n\t\tJoiningDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> EmployeeSourcePartTwo\nsource(output(\n\t\tEmpID as integer,\n\t\tEmpName as string,\n\t\tDesignation as string,\n\t\tDepartment as string,\n\t\tJoiningDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> EmployeeDataSinkForCheck\nEmployeeSource, EmployeeSourcePartTwo union(byName: true)~> EmployeeDataUnion\nEmployeeDataUnion, EmployeeDataSinkForCheck exists(EmployeeDataUnion@EmpID == EmployeeDataSinkForCheck@EmpID,\n\tnegate:true,\n\tbroadcast: 'auto')~> CheckForNotExistsOfData\nCheckForNotExistsOfData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tEmpID as integer,\n\t\tEmpName as string,\n\t\tDesignation as string,\n\t\tDepartment as string,\n\t\tJoiningDate as timestamp\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> CompleteEmployeeSinkData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_AZGEN2_DB_JOIN_LOOKUP')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZGEN2_CUST_DATA_DF",
+								"type": "DatasetReference"
+							},
+							"name": "CustData"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZGEN2_ORDER_DATA_DF",
+								"type": "DatasetReference"
+							},
+							"name": "OrderData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLDB_GEN_CUSTORDERS_DF",
+								"type": "DatasetReference"
+							},
+							"name": "CustomerOrderData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "LookupBasedOnOrderID"
+						},
+						{
+							"name": "SelectRenameCustColumns"
+						},
+						{
+							"name": "SelectOrderData"
+						},
+						{
+							"name": "AlterRowForDeleteInseert"
+						}
+					],
+					"script": "source(output(\n\t\tCust_id as integer,\n\t\tCust_name as string,\n\t\tCust_Score as integer,\n\t\tOrder_id as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> CustData\nsource(output(\n\t\tOrder_ID as short,\n\t\tOrder_name as string,\n\t\tOrder_date as date\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> OrderData\nSelectRenameCustColumns, SelectOrderData lookup(Cust_Order_id == Order_Order_ID,\n\tmultiple: false,\n\tpickup: 'first',\n\tdesc(Order_name, true),\n\tbroadcast: 'auto')~> LookupBasedOnOrderID\nCustData select(mapColumn(\n\t\tCust_id,\n\t\tCust_name,\n\t\tCust_Score,\n\t\tCust_Order_id = Order_id\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRenameCustColumns\nOrderData select(mapColumn(\n\t\tOrder_Order_ID = Order_ID,\n\t\tOrder_name,\n\t\tOrder_date\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectOrderData\nLookupBasedOnOrderID alterRow(deleteIf(Cust_name==\"abd\"),\n\tinsertIf(1==1)) ~> AlterRowForDeleteInseert\nAlterRowForDeleteInseert sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:false,\n\tupsertable:true,\n\tkeys:['Order_Order_ID','Cust_name'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tCust_id,\n\t\tCust_name,\n\t\tCust_Score,\n\t\tCust_Order_id,\n\t\tOrder_Order_ID,\n\t\tOrder_name,\n\t\tOrder_date\n\t)) ~> CustomerOrderData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_AZGEN2_SQLDB_SCD_TYPE2')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_GEN2_SCD_INPUT",
+								"type": "DatasetReference"
+							},
+							"name": "Gen2CustomerData"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_DIM_CUST_SCDTYPE_2",
+								"type": "DatasetReference"
+							},
+							"name": "DimCustomerTargetData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_DIM_CUST_SCDTYPE_2",
+								"type": "DatasetReference"
+							},
+							"name": "DimCustomerInsert"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_DIM_CUST_SCDTYPE_2",
+								"type": "DatasetReference"
+							},
+							"name": "DimCustomerHistory"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_DIM_CUST_SCDTYPE_2",
+								"type": "DatasetReference"
+							},
+							"name": "DimCustomerUpdateInsert"
+						}
+					],
+					"transformations": [
+						{
+							"name": "DVSurroagateKey"
+						},
+						{
+							"name": "SelectRequiredTargetColumns"
+						},
+						{
+							"name": "LookupForMatchingRecords"
+						},
+						{
+							"name": "DCAction"
+						},
+						{
+							"name": "DerivedColumnSystemColumns"
+						},
+						{
+							"name": "ConditionalSplitbyAction"
+						},
+						{
+							"name": "AlterRowForInsert"
+						},
+						{
+							"name": "AlterRow1"
+						},
+						{
+							"name": "DCOldRecordsSetToInActive"
+						},
+						{
+							"name": "AlterRowForNewRecordsBasesOnUpdate"
+						}
+					],
+					"script": "source(output(\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> Gen2CustomerData\nsource(output(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long,\n\t\tstartdate as timestamp,\n\t\tenddate as timestamp,\n\t\tin_active as integer,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tquery: 'SELECT * FROM Dbo.dim_cust_SCD2 WHERE in_active=1',\n\tformat: 'query') ~> DimCustomerTargetData\nGen2CustomerData derive(Surrogate_Key = crc32(concat(toString(cust_id),custname,manager,city,toString(phno)))) ~> DVSurroagateKey\nDimCustomerTargetData select(mapColumn(\n\t\ttgt_surrogate_key = surrogate_key,\n\t\ttgt_cust_id = cust_id,\n\t\ttgt_custname = custname,\n\t\ttgt_manager = manager,\n\t\ttgt_city = city,\n\t\ttgt_phno = phno\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredTargetColumns\nDVSurroagateKey, SelectRequiredTargetColumns lookup(cust_id == tgt_cust_id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupForMatchingRecords\nLookupForMatchingRecords derive(Action = iif(isNull(tgt_cust_id),\"I\",iif((Surrogate_Key!=tgt_surrogate_key),\"U\",\"NA\"))) ~> DCAction\nDCAction derive(startdate = currentTimestamp(),\n\t\tenddate = toDate(\"9999-12-31\",\"yyyy-MM-dd\"),\n\t\tin_active = 1,\n\t\tcreated_date = currentTimestamp(),\n\t\tcreated_by = \"Data Flows\",\n\t\tupdated_date = currentTimestamp(),\n\t\tupdated_by = \"Data Flows\") ~> DerivedColumnSystemColumns\nDerivedColumnSystemColumns split(Action==\"I\",\n\tAction==\"U\",\n\tdisjoint: false) ~> ConditionalSplitbyAction@(InsertRecords, UpdateSCDHistoryRecords)\nConditionalSplitbyAction@InsertRecords alterRow(insertIf(true())) ~> AlterRowForInsert\nConditionalSplitbyAction@UpdateSCDHistoryRecords alterRow(updateIf(true())) ~> AlterRow1\nAlterRow1 derive(in_active = 0,\n\t\tupdated_date = currentTimestamp(),\n\t\tupdated_by = \"Data Flow history\",\n\t\tenddate = currentTimestamp()) ~> DCOldRecordsSetToInActive\nConditionalSplitbyAction@UpdateSCDHistoryRecords alterRow(insertIf(true())) ~> AlterRowForNewRecordsBasesOnUpdate\nAlterRowForInsert sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long,\n\t\tstartdate as timestamp,\n\t\tenddate as timestamp,\n\t\tin_active as integer,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsurrogate_key = Surrogate_Key,\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tphno,\n\t\tstartdate,\n\t\tenddate,\n\t\tin_active,\n\t\tcreated_date,\n\t\tcreated_by,\n\t\tupdated_date,\n\t\tupdated_by\n\t)) ~> DimCustomerInsert\nDCOldRecordsSetToInActive sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long,\n\t\tstartdate as timestamp,\n\t\tenddate as timestamp,\n\t\tin_active as integer,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['cust_id','surrogate_key'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsurrogate_key = tgt_surrogate_key,\n\t\tcust_id = tgt_cust_id,\n\t\tenddate,\n\t\tin_active,\n\t\tupdated_date,\n\t\tupdated_by\n\t)) ~> DimCustomerHistory\nAlterRowForNewRecordsBasesOnUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long,\n\t\tstartdate as timestamp,\n\t\tenddate as timestamp,\n\t\tin_active as integer,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsurrogate_key = Surrogate_Key,\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tphno,\n\t\tstartdate,\n\t\tenddate,\n\t\tin_active,\n\t\tcreated_date,\n\t\tcreated_by,\n\t\tupdated_date,\n\t\tupdated_by\n\t)) ~> DimCustomerUpdateInsert"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_AZGEN2_SQLDB_SCD_TYPE_ONE')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_ADLS_GEN2_SCD_INPUT",
+								"type": "DatasetReference"
+							},
+							"name": "AzGenCustDataSCD"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLDB_SCD",
+								"type": "DatasetReference"
+							},
+							"name": "AZSQLDBDimCustomer"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLDB_SCD",
+								"type": "DatasetReference"
+							},
+							"name": "AZSQLDBSINKSCD"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLDB_SCD",
+								"type": "DatasetReference"
+							},
+							"name": "SinkForUpdateAZSQLDB"
+						}
+					],
+					"transformations": [
+						{
+							"name": "DerivedColumnSurrogateKey"
+						},
+						{
+							"name": "LookupForMatchedNonMatchedData"
+						},
+						{
+							"name": "RenamingSinkSQLDB"
+						},
+						{
+							"name": "DerivedColumnForAction"
+						},
+						{
+							"name": "ConditionalSplitByAction"
+						},
+						{
+							"name": "AlterRowForInsert"
+						},
+						{
+							"name": "DerivedColumnNew"
+						},
+						{
+							"name": "SelectRequiredColumns"
+						},
+						{
+							"name": "AlterRowForUpdate"
+						},
+						{
+							"name": "DerivedColumnforUpdate"
+						},
+						{
+							"name": "SelectRequiredColumnsForUpdate"
+						}
+					],
+					"script": "source(output(\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tphno as long\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> AzGenCustDataSCD\nsource(output(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> AZSQLDBDimCustomer\nAzGenCustDataSCD derive(Surrogate_key = crc32(concat(toString(cust_id),custname,manager,city,toString(phno)))) ~> DerivedColumnSurrogateKey\nDerivedColumnSurrogateKey, RenamingSinkSQLDB lookup(cust_id == Target_cust_id,\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupForMatchedNonMatchedData\nAZSQLDBDimCustomer select(mapColumn(\n\t\tTarget_surrogate_key = surrogate_key,\n\t\tTarget_cust_id = cust_id,\n\t\tTarget_custname = custname,\n\t\tTarget_manager = manager,\n\t\tTarget_city = city,\n\t\tcreated_date,\n\t\tcreated_by,\n\t\tupdated_date,\n\t\tupdated_by\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> RenamingSinkSQLDB\nLookupForMatchedNonMatchedData derive(Action = iif(isNull(Target_cust_id),\"I\",iif((Surrogate_key!=Target_surrogate_key),\"U\",\"NA\"))) ~> DerivedColumnForAction\nDerivedColumnForAction split(Action==\"I\",\n\tAction==\"U\",\n\tdisjoint: false) ~> ConditionalSplitByAction@(NewRecords, UpdateRecords)\nConditionalSplitByAction@NewRecords alterRow(insertIf(true())) ~> AlterRowForInsert\nAlterRowForInsert derive(created_date = currentDate(),\n\t\tcreated_by = \"Data Flows\",\n\t\tupdated_date = currentDate(),\n\t\tupdated_by = \"Data Flows\") ~> DerivedColumnNew\nDerivedColumnNew select(mapColumn(\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tphno,\n\t\tSurrogate_key,\n\t\tcreated_by,\n\t\tupdated_date,\n\t\tupdated_by,\n\t\tcreated_date\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredColumns\nConditionalSplitByAction@UpdateRecords alterRow(updateIf(true())) ~> AlterRowForUpdate\nAlterRowForUpdate derive(updated_date = currentDate(),\n\t\tupdated_by = \"Data Flow Update\") ~> DerivedColumnforUpdate\nDerivedColumnforUpdate select(mapColumn(\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tphno,\n\t\tSurrogate_key,\n\t\tupdated_date,\n\t\tupdated_by\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredColumnsForUpdate\nSelectRequiredColumns sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsurrogate_key = Surrogate_key,\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tcreated_date,\n\t\tcreated_by,\n\t\tupdated_date,\n\t\tupdated_by\n\t)) ~> AZSQLDBSINKSCD\nSelectRequiredColumnsForUpdate sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsurrogate_key as long,\n\t\tcust_id as integer,\n\t\tcustname as string,\n\t\tmanager as string,\n\t\tcity as string,\n\t\tcreated_date as timestamp,\n\t\tcreated_by as string,\n\t\tupdated_date as timestamp,\n\t\tupdated_by as string\n\t),\n\tdeletable:false,\n\tinsertable:false,\n\tupdateable:true,\n\tupsertable:false,\n\tkeys:['cust_id'],\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsurrogate_key = Surrogate_key,\n\t\tcust_id,\n\t\tcustname,\n\t\tmanager,\n\t\tcity,\n\t\tupdated_date,\n\t\tupdated_by\n\t)) ~> SinkForUpdateAZSQLDB"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_AZSQLDB_GEN2')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_SOURCE_FOR_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "SalesOrderDetails"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZGEN2_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "LoadDataIntoGen2"
+						}
+					],
+					"transformations": [
+						{
+							"name": "AddTotalSlaes"
+						},
+						{
+							"name": "SortByTotalSales"
+						}
+					],
+					"script": "source(output(\n\t\tSalesOrderID as integer,\n\t\tSalesOrderDetailID as integer,\n\t\tOrderQty as integer,\n\t\tProductID as integer,\n\t\tUnitPrice as decimal(19,4),\n\t\tUnitPriceDiscount as decimal(19,4),\n\t\tLineTotal as decimal(38,6),\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> SalesOrderDetails\nSalesOrderDetails derive(TotalSales = UnitPrice*OrderQty) ~> AddTotalSlaes\nAddTotalSlaes sort(desc(TotalSales, true)) ~> SortByTotalSales\nSortByTotalSales sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> LoadDataIntoGen2"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_AZSQLDB_GEN2_AGGREGATE_DERIVED')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_TABLE_PRODUCT_SOURCE_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "ProductData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_PRODUCT_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "ProductSinkData"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_PRODUCT_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "ProductSinkAggregateData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "AddTotalCost"
+						},
+						{
+							"name": "AggregateDataByColor"
+						}
+					],
+					"script": "source(output(\n\t\tProductID as integer,\n\t\tName as string,\n\t\tProductNumber as string,\n\t\tColor as string,\n\t\tStandardCost as decimal(19,4),\n\t\tListPrice as decimal(19,4),\n\t\tSize as string,\n\t\tWeight as decimal(8,2),\n\t\tProductCategoryID as integer,\n\t\tProductModelID as integer,\n\t\tSellStartDate as timestamp,\n\t\tSellEndDate as timestamp,\n\t\tDiscontinuedDate as timestamp,\n\t\tThumbNailPhoto as binary,\n\t\tThumbnailPhotoFileName as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table',\n\tpartitionBy('hash', 1)) ~> ProductData\nProductData derive(Totalcost = StandardCost+ListPrice) ~> AddTotalCost\nProductData aggregate(groupBy(Color),\n\tTotalStandardCost = sum(StandardCost),\n\t\tTotalListPrice = sum(ListPrice)) ~> AggregateDataByColor\nAddTotalCost sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['ProductSinkData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> ProductSinkData\nAggregateDataByColor sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['ProductAggregateData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> ProductSinkAggregateData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_AZSQLDB_GEN2_FULLOUTER_JOIN')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_TABLE_PRODUCT_SOURCE_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "ProductDataSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_SOURCE_FOR_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "SalesOrderDetails"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "FulllOuterJoinSinkData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "FullJoinedData"
+						},
+						{
+							"name": "SelectRequiredColumnsInnerJoinData"
+						}
+					],
+					"script": "source(output(\n\t\tProductID as integer,\n\t\tName as string,\n\t\tProductNumber as string,\n\t\tColor as string,\n\t\tStandardCost as decimal(19,4),\n\t\tListPrice as decimal(19,4),\n\t\tSize as string,\n\t\tWeight as decimal(8,2),\n\t\tProductCategoryID as integer,\n\t\tProductModelID as integer,\n\t\tSellStartDate as timestamp,\n\t\tSellEndDate as timestamp,\n\t\tDiscontinuedDate as timestamp,\n\t\tThumbNailPhoto as binary,\n\t\tThumbnailPhotoFileName as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> ProductDataSource\nsource(output(\n\t\tSalesOrderID as integer,\n\t\tSalesOrderDetailID as integer,\n\t\tOrderQty as integer,\n\t\tProductID as integer,\n\t\tUnitPrice as decimal(19,4),\n\t\tUnitPriceDiscount as decimal(19,4),\n\t\tLineTotal as decimal(38,6),\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> SalesOrderDetails\nProductDataSource, SalesOrderDetails join(ProductDataSource@ProductID == SalesOrderDetails@ProductID,\n\tjoinType:'outer',\n\tbroadcast: 'auto')~> FullJoinedData\nFullJoinedData select(mapColumn(\n\t\tProductID = ProductDataSource@ProductID,\n\t\tName,\n\t\tProductNumber,\n\t\tColor,\n\t\tStandardCost,\n\t\tListPrice,\n\t\tSize,\n\t\tWeight,\n\t\tProductCategoryID,\n\t\tProductModelID,\n\t\tSalesOrderID,\n\t\tSalesOrderDetailID,\n\t\tOrderQty,\n\t\tProductID = SalesOrderDetails@ProductID,\n\t\tUnitPrice,\n\t\tUnitPriceDiscount,\n\t\tLineTotal,\n\t\trowguid = SalesOrderDetails@rowguid\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredColumnsInnerJoinData\nSelectRequiredColumnsInnerJoinData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['FulllOuterJoinSinkData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> FulllOuterJoinSinkData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_AZSQLDB_GEN2_INNER_JOIN')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_TABLE_PRODUCT_SOURCE_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "ProductDataSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_SOURCE_FOR_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "SalesOrderDetails"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "InnerJoinSinkData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "InnerJoinedData"
+						},
+						{
+							"name": "SelectRequiredColumnsInnerJoinData"
+						}
+					],
+					"script": "source(output(\n\t\tProductID as integer,\n\t\tName as string,\n\t\tProductNumber as string,\n\t\tColor as string,\n\t\tStandardCost as decimal(19,4),\n\t\tListPrice as decimal(19,4),\n\t\tSize as string,\n\t\tWeight as decimal(8,2),\n\t\tProductCategoryID as integer,\n\t\tProductModelID as integer,\n\t\tSellStartDate as timestamp,\n\t\tSellEndDate as timestamp,\n\t\tDiscontinuedDate as timestamp,\n\t\tThumbNailPhoto as binary,\n\t\tThumbnailPhotoFileName as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> ProductDataSource\nsource(output(\n\t\tSalesOrderID as integer,\n\t\tSalesOrderDetailID as integer,\n\t\tOrderQty as integer,\n\t\tProductID as integer,\n\t\tUnitPrice as decimal(19,4),\n\t\tUnitPriceDiscount as decimal(19,4),\n\t\tLineTotal as decimal(38,6),\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> SalesOrderDetails\nProductDataSource, SalesOrderDetails join(ProductDataSource@ProductID == SalesOrderDetails@ProductID,\n\tjoinType:'inner',\n\tbroadcast: 'auto')~> InnerJoinedData\nInnerJoinedData select(mapColumn(\n\t\tProductID = ProductDataSource@ProductID,\n\t\tName,\n\t\tProductNumber,\n\t\tColor,\n\t\tStandardCost,\n\t\tListPrice,\n\t\tSize,\n\t\tWeight,\n\t\tProductCategoryID,\n\t\tProductModelID,\n\t\tSalesOrderID,\n\t\tSalesOrderDetailID,\n\t\tOrderQty,\n\t\tProductID = SalesOrderDetails@ProductID,\n\t\tUnitPrice,\n\t\tUnitPriceDiscount,\n\t\tLineTotal,\n\t\trowguid = SalesOrderDetails@rowguid\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredColumnsInnerJoinData\nSelectRequiredColumnsInnerJoinData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['InnerJoinSinkData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> InnerJoinSinkData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_AZSQLDB_GEN2_LEFT_JOIN')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_TABLE_PRODUCT_SOURCE_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "ProductDataSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_SOURCE_FOR_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "SalesOrderDetails"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "LeftJoinSinkData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "LeftJoinedData"
+						},
+						{
+							"name": "SelectRequiredColumnsInnerJoinData"
+						}
+					],
+					"script": "source(output(\n\t\tProductID as integer,\n\t\tName as string,\n\t\tProductNumber as string,\n\t\tColor as string,\n\t\tStandardCost as decimal(19,4),\n\t\tListPrice as decimal(19,4),\n\t\tSize as string,\n\t\tWeight as decimal(8,2),\n\t\tProductCategoryID as integer,\n\t\tProductModelID as integer,\n\t\tSellStartDate as timestamp,\n\t\tSellEndDate as timestamp,\n\t\tDiscontinuedDate as timestamp,\n\t\tThumbNailPhoto as binary,\n\t\tThumbnailPhotoFileName as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> ProductDataSource\nsource(output(\n\t\tSalesOrderID as integer,\n\t\tSalesOrderDetailID as integer,\n\t\tOrderQty as integer,\n\t\tProductID as integer,\n\t\tUnitPrice as decimal(19,4),\n\t\tUnitPriceDiscount as decimal(19,4),\n\t\tLineTotal as decimal(38,6),\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> SalesOrderDetails\nProductDataSource, SalesOrderDetails join(ProductDataSource@ProductID == SalesOrderDetails@ProductID,\n\tjoinType:'left',\n\tbroadcast: 'auto')~> LeftJoinedData\nLeftJoinedData select(mapColumn(\n\t\tProductID = ProductDataSource@ProductID,\n\t\tName,\n\t\tProductNumber,\n\t\tColor,\n\t\tStandardCost,\n\t\tListPrice,\n\t\tSize,\n\t\tWeight,\n\t\tProductCategoryID,\n\t\tProductModelID,\n\t\tSalesOrderID,\n\t\tSalesOrderDetailID,\n\t\tOrderQty,\n\t\tProductID = SalesOrderDetails@ProductID,\n\t\tUnitPrice,\n\t\tUnitPriceDiscount,\n\t\tLineTotal,\n\t\trowguid = SalesOrderDetails@rowguid\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredColumnsInnerJoinData\nSelectRequiredColumnsInnerJoinData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['LeftJoinSinkData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> LeftJoinSinkData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_AZSQLDB_GEN2_RIGHT_JOIN')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_TABLE_PRODUCT_SOURCE_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "ProductDataSource"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_SOURCE_FOR_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "SalesOrderDetails"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "RightJoinSinkData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "RightJoinedData"
+						},
+						{
+							"name": "SelectRequiredColumnsInnerJoinData"
+						}
+					],
+					"script": "source(output(\n\t\tProductID as integer,\n\t\tName as string,\n\t\tProductNumber as string,\n\t\tColor as string,\n\t\tStandardCost as decimal(19,4),\n\t\tListPrice as decimal(19,4),\n\t\tSize as string,\n\t\tWeight as decimal(8,2),\n\t\tProductCategoryID as integer,\n\t\tProductModelID as integer,\n\t\tSellStartDate as timestamp,\n\t\tSellEndDate as timestamp,\n\t\tDiscontinuedDate as timestamp,\n\t\tThumbNailPhoto as binary,\n\t\tThumbnailPhotoFileName as string,\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> ProductDataSource\nsource(output(\n\t\tSalesOrderID as integer,\n\t\tSalesOrderDetailID as integer,\n\t\tOrderQty as integer,\n\t\tProductID as integer,\n\t\tUnitPrice as decimal(19,4),\n\t\tUnitPriceDiscount as decimal(19,4),\n\t\tLineTotal as decimal(38,6),\n\t\trowguid as string,\n\t\tModifiedDate as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> SalesOrderDetails\nProductDataSource, SalesOrderDetails join(ProductDataSource@ProductID == SalesOrderDetails@ProductID,\n\tjoinType:'right',\n\tbroadcast: 'auto')~> RightJoinedData\nRightJoinedData select(mapColumn(\n\t\tProductID = ProductDataSource@ProductID,\n\t\tName,\n\t\tProductNumber,\n\t\tColor,\n\t\tStandardCost,\n\t\tListPrice,\n\t\tSize,\n\t\tWeight,\n\t\tProductCategoryID,\n\t\tProductModelID,\n\t\tSalesOrderID,\n\t\tSalesOrderDetailID,\n\t\tOrderQty,\n\t\tProductID = SalesOrderDetails@ProductID,\n\t\tUnitPrice,\n\t\tUnitPriceDiscount,\n\t\tLineTotal,\n\t\trowguid = SalesOrderDetails@rowguid\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredColumnsInnerJoinData\nSelectRequiredColumnsInnerJoinData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['RightJoinedData.csv'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> RightJoinSinkData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_FALTTERN_TRANSFORMATIO_HIGH_PROFIT_RANK')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_FLATTERN_DATA_ORG_INPUT",
+								"type": "DatasetReference"
+							},
+							"name": "SourceFlatterndataOrg"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQL_TOPPERS_PROFIT_ORG",
+								"type": "DatasetReference"
+							},
+							"name": "sqltableToppersData"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_ORG_LIST_OUTPUT",
+								"type": "DatasetReference"
+							},
+							"name": "orglistinfordata"
+						}
+					],
+					"transformations": [
+						{
+							"name": "FlattenOrgData"
+						},
+						{
+							"name": "RankbyProfit"
+						},
+						{
+							"name": "Consplit"
+						}
+					],
+					"script": "source(output(\n\t\tid as string,\n\t\ttype as string,\n\t\tname as string,\n\t\tprofit as string,\n\t\tmanagment as (id as string, type as string)[]\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false,\n\tdocumentForm: 'arrayOfDocuments') ~> SourceFlatterndataOrg\nSourceFlatterndataOrg foldDown(unroll(managment),\n\tmapColumn(\n\t\tid,\n\t\ttype,\n\t\tname,\n\t\tprofit,\n\t\t{managment.id} = managment.id,\n\t\t{managment.type} = managment.type\n\t),\n\tskipDuplicateMapInputs: false,\n\tskipDuplicateMapOutputs: false) ~> FlattenOrgData\nFlattenOrgData rank(desc(profit, true),\n\toutput(Rank as long),\n\tdense: true) ~> RankbyProfit\nRankbyProfit split(Rank==1,\n\tdisjoint: true) ~> Consplit@(MainLevel, OrganizationList)\nConsplit@MainLevel sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> sqltableToppersData\nConsplit@OrganizationList sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> orglistinfordata"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_GEN2_REMOVE_DUPLICATES_STORE_SUMMARY')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"folder": {
+					"name": "MASTER_DATAFACTORY_DATAFLOW"
+				},
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_SOURCE_CREDITCARD_DATA_DF",
+								"type": "DatasetReference"
+							},
+							"name": "CreditCardData"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_GEN2_INNERJOIN_DATA_SINK_DATAFLOW",
+								"type": "DatasetReference"
+							},
+							"name": "UniquedataCreditData"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_AZSQLDB_TOPPERSDATA",
+								"type": "DatasetReference"
+							},
+							"name": "ToppersData"
+						},
+						{
+							"dataset": {
+								"referenceName": "DS_CREDIT_DATA_SINK_DF",
+								"type": "DatasetReference"
+							},
+							"name": "CreditData"
+						}
+					],
+					"transformations": [
+						{
+							"name": "SortCreditCardData"
+						},
+						{
+							"name": "WindowForRowNumber"
+						},
+						{
+							"name": "FilterRemoveDuplicates"
+						},
+						{
+							"name": "SelectRequiredColumn"
+						},
+						{
+							"name": "WindowGroupByCardType"
+						},
+						{
+							"name": "ConditionalSplitByDenseRank"
+						},
+						{
+							"name": "SelectColumnsFromToopersData"
+						},
+						{
+							"name": "SelectCreditData"
+						}
+					],
+					"script": "source(output(\n\t\tCredit_ID as string,\n\t\tCard_Type as string,\n\t\tCredit_name as string,\n\t\tCredtiScore as integer\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tignoreNoFilesFound: false) ~> CreditCardData\nCreditCardData sort(asc(Credit_ID, true),\n\tasc(Card_Type, true)) ~> SortCreditCardData\nSortCreditCardData window(over(Credit_ID,\n\t\tCard_Type,\n\t\tCredit_name,\n\t\tCredtiScore),\n\tasc(Credit_ID, true),\n\tRow_Number = rowNumber()) ~> WindowForRowNumber\nWindowForRowNumber filter(Row_Number==1) ~> FilterRemoveDuplicates\nFilterRemoveDuplicates select(mapColumn(\n\t\tCredit_ID,\n\t\tCard_Type,\n\t\tCredit_name,\n\t\tCredtiScore\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectRequiredColumn\nFilterRemoveDuplicates window(over(Card_Type),\n\tdesc(CredtiScore, true),\n\tGen_Rank = rank(),\n\t\tGen_DesnseRank = denseRank(),\n\t\tRanK_RowNumber = rowNumber()) ~> WindowGroupByCardType\nWindowGroupByCardType split(Gen_DesnseRank==1,\n\tdisjoint: false) ~> ConditionalSplitByDenseRank@(ToppersData, CreditData)\nConditionalSplitByDenseRank@ToppersData select(mapColumn(\n\t\tCredit_ID,\n\t\tCard_Type,\n\t\tCredit_name,\n\t\tCredtiScore,\n\t\tRow_Number,\n\t\tGen_Rank,\n\t\tGen_DesnseRank,\n\t\tRanK_RowNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectColumnsFromToopersData\nConditionalSplitByDenseRank@CreditData select(mapColumn(\n\t\tCredit_ID,\n\t\tCard_Type,\n\t\tCredit_name,\n\t\tCredtiScore,\n\t\tRow_Number,\n\t\tGen_Rank,\n\t\tGen_DesnseRank,\n\t\tRanK_RowNumber\n\t),\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true) ~> SelectCreditData\nSelectRequiredColumn sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tpartitionFileNames:['UniqueCreditCardData'],\n\tumask: 0022,\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\tpartitionBy('hash', 1)) ~> UniquedataCreditData\nSelectColumnsFromToopersData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> ToppersData\nSelectCreditData sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError') ~> CreditData"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_41_COPY_DATA_FROM_AZSQLDB_GEN2_USING_DATAFLOW')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "AZ SQL TO GEN2 - DATA FLOW",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_AZSQLDB_GEN2",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"SalesOrderDetails": {},
+									"LoadDataIntoGen2": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-24T02:39:56Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_AZSQLDB_GEN2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_42_COPY_DATA_AZSQL_GEN2_AGGREGATE_DERIVED')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "AZSQL TO GEN2 AGGREGATE DATA FLOW",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_AZSQLDB_GEN2_AGGREGATE_DERIVED",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"ProductData": {},
+									"ProductSinkData": {},
+									"ProductSinkAggregateData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-24T05:22:39Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_AZSQLDB_GEN2_AGGREGATE_DERIVED')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_43_COPY_DATA_AZSQLDB_GEN2_FULLOUTER_JOIN')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - AZSQLDB TO GEN2 JOINS",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_AZSQLDB_GEN2_FULLOUTER_JOIN",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"ProductDataSource": {},
+									"SalesOrderDetails": {},
+									"FulllOuterJoinSinkData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-24T09:31:07Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_AZSQLDB_GEN2_FULLOUTER_JOIN')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_43_COPY_DATA_AZSQLDB_GEN2_INNER_JOIN')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - AZSQLDB TO GEN2 JOINS",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_AZSQLDB_GEN2_INNER_JOIN",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"ProductDataSource": {},
+									"SalesOrderDetails": {},
+									"InnerJoinSinkData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-24T06:09:19Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_AZSQLDB_GEN2_INNER_JOIN')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_43_COPY_DATA_AZSQLDB_GEN2_LEFT_JOIN')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - AZSQLDB TO GEN2 JOINS",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_AZSQLDB_GEN2_LEFT_JOIN",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"ProductDataSource": {},
+									"SalesOrderDetails": {},
+									"LeftJoinSinkData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-24T06:08:35Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_AZSQLDB_GEN2_LEFT_JOIN')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_43_COPY_DATA_AZSQLDB_GEN2_RIGHT_JOIN')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - AZSQLDB TO GEN2 JOINS",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_AZSQLDB_GEN2_RIGHT_JOIN",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"ProductDataSource": {},
+									"SalesOrderDetails": {},
+									"RightJoinSinkData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-24T06:15:03Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_AZSQLDB_GEN2_RIGHT_JOIN')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_44_COPY_DATA_AZSQL_GEN2_CONDITIONAL_SPLIT')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - UNION AND CONDITIONAL SPLIT",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF - AZSQLDB WITH UNION AND CONDITIONAL_SPLIT",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"EmployeeSource": {},
+									"EmployeeSourcePartTwo": {},
+									"Labdata": {},
+									"ITData": {},
+									"AccountData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-25T01:32:26Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_45_COPYDATA_AZSQL_UNION_EXISTS_DF')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF - UNION AND EXISTS TRANSFORMATION",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF - AZSQLDB WITH UNION AND EXISTS TRANSFORMATION",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"EmployeeSource": {},
+									"EmployeeSourcePartTwo": {},
+									"EmployeeDataSinkForCheck": {},
+									"CompleteEmployeeSinkData": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": [],
+				"lastPublishTime": "2021-06-25T01:15:53Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF - AZSQLDB WITH UNION AND EXISTS TRANSFORMATION')]"
+			]
+		}
+	]
+}

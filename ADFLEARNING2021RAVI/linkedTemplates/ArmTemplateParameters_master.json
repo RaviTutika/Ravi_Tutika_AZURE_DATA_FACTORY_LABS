@@ -1,0 +1,135 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "ADFLEARNING2021RAVI"
+		},
+		"LS_AWS_S3_secretAccessKey": {
+			"value": ""
+		},
+		"LS_AZBLOB_connectionString": {
+			"value": ""
+		},
+		"LS_AZBLOB_GEN2_connectionString": {
+			"value": ""
+		},
+		"LS_AZBLOB_GEN2_SERVICE_accountKey": {
+			"value": ""
+		},
+		"LS_AZGEN2_DATAFACTORY_accountKey": {
+			"value": ""
+		},
+		"LS_AZSQLDB_connectionString": {
+			"value": ""
+		},
+		"LS_AZSQLDB_DESTINATION_connectionString": {
+			"value": ""
+		},
+		"LS_AZVM_SQL_ON_PREMISE_connectionString": {
+			"value": ""
+		},
+		"LS_AzureSynapseAnalytics_connectionString": {
+			"value": ""
+		},
+		"LS_COSMOS_connectionString": {
+			"value": ""
+		},
+		"LS_FILESYSTEM_AZVM_password": {
+			"value": ""
+		},
+		"LS_SALESFORCE_password": {
+			"value": ""
+		},
+		"LS_SALESFORCE_securityToken": {
+			"value": ""
+		},
+		"LS_SQLSERVER_connectionString": {
+			"value": ""
+		},
+		"LS_AZUREDATABRICKS_accessToken": {
+			"value": ""
+		},
+		"LS_AWS_S3_properties_typeProperties_accessKeyId": {
+			"value": "AKIARO4WCVQIRS4OEE75"
+		},
+		"LS_AZBLOB_GEN2_SERVICE_properties_typeProperties_url": {
+			"value": "https://storagegen2fordatabricks.dfs.core.windows.net"
+		},
+		"LS_AZBLOB_KV_properties_typeProperties_connectionString_secretName": {
+			"value": "AZBLOBKVCONNECTION"
+		},
+		"LS_AZBLOB_SAS_sasUri": {
+			"value": ""
+		},
+		"LS_AZGEN2_DATAFACTORY_properties_typeProperties_url": {
+			"value": "https://azuredatalakegen2adf.dfs.core.windows.net"
+		},
+		"LS_AZSQLDB_KV_properties_typeProperties_connectionString_secretName": {
+			"value": "AZSQLDBKV"
+		},
+		"LS_FILESYSTEM_AZVM_properties_typeProperties_host": {
+			"value": "C:\\DataFolder\\"
+		},
+		"LS_FILESYSTEM_AZVM_properties_typeProperties_userId": {
+			"value": "adminuser"
+		},
+		"LS_KeyVault_properties_typeProperties_baseUrl": {
+			"value": "https://AZ-KV-20210610.vault.azure.net/"
+		},
+		"LS_RESTAPI_JSON_properties_typeProperties_url": {
+			"value": "@{linkedService().LS_SourceURL_Param}"
+		},
+		"LS_SALESFORCE_properties_typeProperties_environmentUrl": {
+			"value": "https://login.salesforce.com"
+		},
+		"LS_SALESFORCE_properties_typeProperties_username": {
+			"value": "rtutika93@gmail.com"
+		},
+		"LS_SNOWFLAKE_connectionString": {
+			"value": ""
+		},
+		"TR_EVENT_TRIGGER_properties_PL_LAB_23_EVENT_TRIGGER_COPY_DATA_BLOB_TO_SQL_parameters_PL_SOURCE_FOLDER_PARAM": {
+			"value": "@triggerBody().folderPath"
+		},
+		"TR_EVENT_TRIGGER_properties_PL_LAB_23_EVENT_TRIGGER_COPY_DATA_BLOB_TO_SQL_parameters_PL_FILENAME_PARAM": {
+			"value": "@triggerBody().fileName"
+		},
+		"TR_EVENT_TRIGGER_properties_typeProperties_scope": {
+			"value": "/subscriptions/589236d2-94ee-4a96-957e-6be80868fac7/resourceGroups/RG-AZUREDATA_FACTORY_MASTER_PROGRAM/providers/Microsoft.Storage/storageAccounts/storageaccount07062021"
+		},
+		"TR_TUMB_properties_pipeline_parameters_PL_WindowStartTime": {
+			"value": "@trigger().outputs.windowStartTime"
+		},
+		"TR_TUMB_properties_pipeline_parameters_PL_WindowEndTime": {
+			"value": "@trigger().outputs.windowEndTime"
+		},
+		"TR_TUMB_properties_pipeline_parameters_PL_TriggerTime": {
+			"value": "@trigger().startTime"
+		},
+		"TR_TUMBLING_WINDOW_properties_pipeline_parameters_PL_WindowStartTime": {
+			"value": "@trigger().outputs.windowStartTime"
+		},
+		"TR_TUMBLING_WINDOW_properties_pipeline_parameters_PL_WindowEndTime": {
+			"value": "@trigger().outputs.windowEndTime"
+		},
+		"TR_TUMBLING_WINDOW_properties_pipeline_parameters_PL_TriggerTime": {
+			"value": "@trigger().startTime"
+		},
+		"LiftShiftSSISPackagesRunTime_properties_typeProperties_ssisProperties_catalogInfo_catalogServerEndpoint": {
+			"value": "az-sqlserver-001-learning.database.windows.net"
+		},
+		"LiftShiftSSISPackagesRunTime_properties_typeProperties_ssisProperties_catalogInfo_catalogAdminUserName": {
+			"value": "adminuser"
+		},
+		"LiftShiftSSISPackagesRunTime_properties_typeProperties_ssisProperties_catalogInfo_catalogAdminPassword": {
+			"value": ""
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
