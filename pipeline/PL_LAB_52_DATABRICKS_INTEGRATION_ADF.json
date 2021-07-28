@@ -1,0 +1,35 @@
+{
+	"name": "PL_LAB_52_DATABRICKS_INTEGRATION_ADF",
+	"properties": {
+		"activities": [
+			{
+				"name": "Notebook",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Users/badarikrishnachaitanya@outlook.com/Data Bricks Integration With ADF",
+					"baseParameters": {
+						"l_type": "history",
+						"p_date": "2021/07/26"
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_AZUREDATABRICKS",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"folder": {
+			"name": "MASTER_PROGRAM_PIPELINES"
+		},
+		"annotations": []
+	}
+}
