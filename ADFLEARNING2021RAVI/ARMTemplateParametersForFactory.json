@@ -26,6 +26,9 @@
 		"LS_AZSQLDB_DESTINATION_connectionString": {
 			"value": ""
 		},
+		"LS_AZUREDATABRICKS_accessToken": {
+			"value": ""
+		},
 		"LS_AZVM_SQL_ON_PREMISE_connectionString": {
 			"value": ""
 		},
@@ -45,9 +48,6 @@
 			"value": ""
 		},
 		"LS_SQLSERVER_connectionString": {
-			"value": ""
-		},
-		"LS_AZUREDATABRICKS_accessToken": {
 			"value": ""
 		},
 		"LS_AWS_S3_properties_typeProperties_accessKeyId": {

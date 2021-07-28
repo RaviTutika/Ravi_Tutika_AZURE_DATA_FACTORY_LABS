@@ -35,6 +35,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'LS_AZSQLDB_DESTINATION'"
 		},
+		"LS_AZUREDATABRICKS_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'LS_AZUREDATABRICKS'"
+		},
 		"LS_AzureSynapseAnalytics_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'LS_AzureSynapseAnalytics'"
@@ -50,10 +54,6 @@
 		"LS_SALESFORCE_securityToken": {
 			"type": "secureString",
 			"metadata": "Secure string for 'securityToken' of 'LS_SALESFORCE'"
-		},
-		"LS_AZUREDATABRICKS_accessToken": {
-			"type": "secureString",
-			"metadata": "Secure string for 'accessToken' of 'LS_AZUREDATABRICKS'"
 		},
 		"LS_AWS_S3_properties_typeProperties_accessKeyId": {
 			"type": "string",
@@ -250,6 +250,24 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/LS_AZUREDATABRICKS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-3139825809203173.13.azuredatabricks.net",
+					"accessToken": {
+						"type": "SecureString",
+						"value": "[parameters('LS_AZUREDATABRICKS_accessToken')]"
+					},
+					"existingClusterId": "0728-103652-send656"
+				}
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/LS_AzureSynapseAnalytics')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
@@ -394,69 +412,43 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/LS_AZUREDATABRICKS')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"name": "[concat(parameters('factoryName'), '/PL_LAB_52_DATABRICKS_INTEGRATION_ADF')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
-				"annotations": [],
-				"type": "AzureDatabricks",
-				"typeProperties": {
-					"domain": "https://adb-3139825809203173.13.azuredatabricks.net",
-					"accessToken": {
-						"type": "SecureString",
-						"value": "[parameters('LS_AZUREDATABRICKS_accessToken')]"
-					},
-					"existingClusterId": "0728-103652-send656"
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/DF_SOURCE_PIVOTDATA')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "LS_AZGEN2_DATAFACTORY",
-					"type": "LinkedServiceReference"
-				},
-				"folder": {
-					"name": "MASTER_PROGRAM_INPUTS"
-				},
-				"annotations": [],
-				"type": "DelimitedText",
-				"typeProperties": {
-					"location": {
-						"type": "AzureBlobFSLocation",
-						"fileName": "PivotedData.csv",
-						"fileSystem": "pivotabledata"
-					},
-					"columnDelimiter": ",",
-					"escapeChar": "\\",
-					"firstRowAsHeader": true,
-					"quoteChar": "\""
-				},
-				"schema": [
+				"activities": [
 					{
-						"name": "Credit_ID",
-						"type": "String"
-					},
-					{
-						"name": "Credit_Name",
-						"type": "String"
-					},
-					{
-						"name": "Master",
-						"type": "String"
-					},
-					{
-						"name": "visa",
-						"type": "String"
+						"name": "Notebook",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Users/badarikrishnachaitanya@outlook.com/Data Bricks Integration With ADF",
+							"baseParameters": {
+								"l_type": "incremental",
+								"p_date": "2021/07/28"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "LS_AZUREDATABRICKS",
+							"type": "LinkedServiceReference"
+						}
 					}
-				]
+				],
+				"folder": {
+					"name": "MASTER_PROGRAM_PIPELINES"
+				},
+				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/LS_AZGEN2_DATAFACTORY')]"
+				"[concat(variables('factoryId'), '/linkedServices/LS_AZUREDATABRICKS')]"
 			]
 		}
 	]

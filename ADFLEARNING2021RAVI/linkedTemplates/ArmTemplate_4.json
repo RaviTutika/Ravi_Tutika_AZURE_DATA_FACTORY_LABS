@@ -41,6 +41,50 @@
 	},
 	"resources": [
 		{
+			"name": "[concat(parameters('factoryName'), '/DS_SINK_GEN2_NESTED_FOREACH_FOLDER_FILES')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AZGEN2_DATAFACTORY",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"DS_FOLDER_SINK_NESTED_FOREACH_PARAM": {
+						"type": "string"
+					},
+					"DS_FILES_SINK_NESTED_FOREACH_PARAM": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "MASTER_PROGRAM_OUTPUTS"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().DS_FILES_SINK_NESTED_FOREACH_PARAM",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().DS_FOLDER_SINK_NESTED_FOREACH_PARAM",
+							"type": "Expression"
+						},
+						"fileSystem": "nestedforeachoutput"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/DS_SINK_PIVOTED_DATA')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -590,44 +634,6 @@
 					},
 					"dependsOn": []
 				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/PL_LAB_52_DATABRICKS_INTEGRATION_ADF')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "Notebook",
-						"type": "DatabricksNotebook",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "7.00:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"notebookPath": "/Users/badarikrishnachaitanya@outlook.com/Data Bricks Integration With ADF",
-							"baseParameters": {
-								"l_type": "history",
-								"p_date": "2021/07/26"
-							}
-						},
-						"linkedServiceName": {
-							"referenceName": "LS_AZUREDATABRICKS",
-							"type": "LinkedServiceReference"
-						}
-					}
-				],
-				"folder": {
-					"name": "MASTER_PROGRAM_PIPELINES"
-				},
-				"annotations": []
 			},
 			"dependsOn": []
 		},
