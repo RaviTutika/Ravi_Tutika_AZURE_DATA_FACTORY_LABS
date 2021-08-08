@@ -5,6 +5,9 @@
 			"referenceName": "LS_BLOB_PROJCT",
 			"type": "LinkedServiceReference"
 		},
+		"folder": {
+			"name": "MASTER_PROGRAM_INPUTS"
+		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {
